@@ -135,37 +135,6 @@ function WarpStreaks({ speed }) {
   )
 }
 
-/** 배경 별. 한 번만 만들어서 렌더마다 안 흔들리게 한다. */
-function Stars() {
-  const stars = useRef(null)
-  if (!stars.current) {
-    stars.current = Array.from({ length: 50 }, (_, i) => ({
-      id: i,
-      big: i % 7 === 0,
-      left: (i * 37 + 13) % 100,
-      top: (i * 53 + 7) % 100,
-      o: 0.15 + (i % 5) * 0.12,
-    }))
-  }
-  return (
-    <div className="pointer-events-none absolute inset-0">
-      {stars.current.map((s) => (
-        <div
-          key={s.id}
-          className="absolute rounded-full bg-white"
-          style={{
-            width: s.big ? 2 : 1,
-            height: s.big ? 2 : 1,
-            left: `${s.left}%`,
-            top: `${s.top}%`,
-            opacity: s.o,
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
 /* 계기판. 지금 상태(에너지·속도·방어막)와 이번 세션에 번 것(에너지·거리)을
  * 한 상자에 담는다. 따로 떼어 놓으면 화면이 위아래로 길어지기만 하고, 둘 다
  * "지금 어떻게 가고 있나"를 말하는 숫자라 같이 봐야 뜻이 산다. */
@@ -255,6 +224,8 @@ export function StudySession({
   error,
   /** 발사 연출을 타고 들어왔으면 true — 함선이 제자리에 앉은 뒤에야 계기를 켠다. */
   entering = false,
+  /** 기록을 마치고 홈으로 돌아가는 중 — 계기가 빠지고 함선은 오버레이가 데려간다. */
+  leaving = false,
 }) {
   const [now, setNow] = useState(Date.now())
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -320,7 +291,6 @@ export function StudySession({
   /* ── 항해 중 화면 ── */
   return (
     <div className="relative -mx-5 min-h-[calc(100vh-12rem)] overflow-hidden px-5 pt-6 pb-12">
-      <Stars />
       {/* 정지하면 워프가 뚝 꺼지지 않고 1초쯤에 걸쳐 잦아든다 — 배도 배경도
           같이 멈추는 느낌을 준다. 재개하면 다시 차오른다. */}
       <AnimatePresence>
@@ -410,18 +380,22 @@ export function StudySession({
           )}
         </motion.div>
 
-        <motion.div
-          layoutId="my-ship-transit"
-          transition={{ layout: { type: 'tween', duration: 1.05, ease: [0.3, 0, 0.2, 1] } }}
-        >
-          <Spaceship
-            status={statusOf(energy)}
-            isStudying={energy > 0 && !finishing}
-            shields={shields}
-            energy={energy}
-            size={140}
-          />
-        </motion.div>
+        {leaving ? (
+          <div style={{ height: 140 }} />
+        ) : (
+          <motion.div
+            layoutId="my-ship-transit"
+            transition={{ layout: { type: 'tween', duration: 1.05, ease: [0.3, 0, 0.2, 1] } }}
+          >
+            <Spaceship
+              status={statusOf(energy)}
+              isStudying={energy > 0 && !finishing}
+              shields={shields}
+              energy={energy}
+              size={140}
+            />
+          </motion.div>
+        )}
 
         <motion.div
           className="flex w-full flex-col items-center gap-7"

@@ -3,6 +3,7 @@ import AuthGate from './components/AuthGate'
 import RoomGate from './components/RoomGate'
 import Orbit from './pages/Orbit'
 import OrbitAdmin from './components/OrbitAdmin'
+import { Starfield } from './components/orbit/Starfield'
 import { OrbitButton } from './components/OrbitButton'
 import { Sheet } from './components/ui'
 import { leaveRoom, setMyPhoto } from './lib/rooms'
@@ -32,8 +33,10 @@ function Main({ me, refresh }) {
 
   return (
     <>
+      {/* 별밭은 화면이 바뀌어도 그대로 있어야 한다 — 여기 한 번만 깐다. */}
+      <Starfield />
       {/* 상단 바 — 서비스 이름과 지금 방. 방 이름을 누르면 초대코드가 뜬다. */}
-      <header className="flex items-center justify-between gap-3 px-5 pt-4 pb-2">
+      <header className="relative z-10 flex items-center justify-between gap-3 px-5 pt-4 pb-2">
         <div className="neon text-[18px] leading-none font-bold tracking-widest text-orbit-cyan">
           STUDY ORBITAL
         </div>
@@ -46,7 +49,7 @@ function Main({ me, refresh }) {
         </button>
       </header>
 
-      <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-10">
+      <main className="relative z-10 mx-auto w-full max-w-xl flex-1 px-4 pb-10">
         <Orbit />
       </main>
 

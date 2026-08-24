@@ -1501,7 +1501,6 @@ export default function Orbit() {
   /* 발사 연출. 켜지면 LAUNCH_MS 뒤에 스스로 꺼진다. */
   const [igniting, setIgniting] = useState(null) // null | 'fly' | 'fade'
   /* 이번 세션이 발사 연출을 타고 시작됐는가 — 새로고침으로 복귀한 세션과 구분한다. */
-  const [justLaunched, setJustLaunched] = useState(false)
   /* 귀환 연출 단계. null | 'fly'(중앙으로) | 'fade'(어둠 걷히며 홈 안착). */
   const [returning, setReturning] = useState(null)
   /* uid → 프사(data URL). 함선 옆에 띄운다. 프사는 자주 안 바뀌니 20초 폴링에
@@ -1570,7 +1569,11 @@ export default function Orbit() {
 
   useEffect(() => {
     if (returning !== 'fly') return
-    const t = setTimeout(() => setReturning('fade'), RETURN_HOLD_MS)
+    const t = setTimeout(() => {
+      setSession(null)
+      setFinishing(false)
+      setReturning('fade')
+    }, RETURN_HOLD_MS)
     return () => clearTimeout(t)
   }, [returning])
 
@@ -1639,7 +1642,6 @@ export default function Orbit() {
         onTakeover={async () => {
           setSaving({ busy: true, error: null })
           try {
-            setJustLaunched(false)
             setSession(await startSession(true))
             setSaving({ busy: false, error: null })
           } catch (e) {
@@ -1661,14 +1663,13 @@ export default function Orbit() {
    * 오버레이는 두 화면 교체를 가로질러 같은 자리에서 살아 있어야 워프 광선이
    * 끊기지 않는다 — 그래서 return이 하나다. */
   const showStudy = session && igniting !== 'fly'
-  const contentHidden = igniting === 'fly' || returning === 'fly'
   return (
     <>
       {igniting && <LaunchOverlay ship={state.ship} phase={igniting} />}
       {returning && <ReturnOverlay phase={returning} ship={state.ship} />}
       {showStudy ? (
         <StudySession
-          entering={justLaunched}
+          leaving={returning === 'fly'}
           session={session}
           ship={state.ship}
           fleet={state.fleet}
@@ -1697,9 +1698,9 @@ export default function Orbit() {
                   Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 60000),
                 ),
               })
-              setSession(null)
-              setFinishing(false)
               setSaving({ busy: false, error: null })
+              /* 세션은 아직 지우지 않는다 — 계기가 빠지고 함선이 중앙으로
+               * 떠오르는 동안 화면은 그대로 있어야 한다. 지우는 건 'fade'에서. */
               setReturning('fly')
               load()
             } catch (e) {
@@ -1708,12 +1709,7 @@ export default function Orbit() {
           }}
         />
       ) : (
-        <motion.div
-          className="space-y-4"
-          initial={false}
-          animate={{ opacity: contentHidden ? 0 : 1 }}
-          transition={{ duration: 0.35 }}
-        >
+        <div className={`space-y-4 ${igniting || returning ? 'pointer-events-none' : ''}`}>
           <div className="flex gap-1 rounded-control border border-white/10 bg-white/5 p-1">
             {VIEWS.map((v) => (
               <button
@@ -1753,7 +1749,6 @@ export default function Orbit() {
                   try {
                     const s = await startSession()
                     setIgniting('fly')
-                    setJustLaunched(true)
                     setSession(s)
                   } catch (e) {
                     /* 다른 기기가 이미 돌리고 있으면 에러로 끝내지 않는다. 그 세션을
@@ -1782,7 +1777,7 @@ export default function Orbit() {
           )}
 
           {view === 'time' && <StudyTime rows={state.ranking} onChanged={load} />}
-        </motion.div>
+        </div>
       )}
     </>
   )
