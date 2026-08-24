@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Bell, BellOff, Settings } from 'lucide-react'
+import { Bell, BellOff, Users } from 'lucide-react'
 import AuthGate from './components/AuthGate'
 import RoomGate from './components/RoomGate'
 import Orbit from './pages/Orbit'
@@ -59,33 +59,32 @@ function Main({ me, refresh }) {
         <div className="neon shrink-0 text-[18px] leading-none font-bold tracking-widest whitespace-nowrap text-orbit-cyan">
           STUDY ORBITAL
         </div>
-        {/* 현재 방 이름+설정 | ⇄ 방 전환. 이름을 누르면 방 정보, 오른쪽은 내 방 목록. */}
-        <div className="flex min-w-0 items-center overflow-hidden rounded-full border border-white/15 bg-white/5">
-          <button
-            onClick={() => setRoomOpen(true)}
-            className="flex min-w-0 items-center gap-1.5 py-1.5 pr-2.5 pl-3 text-[13px] font-semibold text-orbit-text"
-          >
-            <span className="max-w-[6.5rem] truncate">{me.room.name}</span>
-            <Settings
-              className="h-3.5 w-3.5 shrink-0 text-orbit-cyan"
-              style={{ filter: 'drop-shadow(0 0 4px rgba(0,212,255,0.9))' }}
-            />
-          </button>
-          <span className="h-4 w-px shrink-0 bg-white/20" />
-          <button
-            onClick={() => setSwitchOpen(true)}
-            className="flex shrink-0 items-center gap-1 py-1.5 pr-3 pl-2.5 text-[12px] font-bold text-orbit-cyan"
-          >
-            <span className="text-[14px] leading-none">⇄</span>
-            <span>방 전환</span>
-          </button>
-        </div>
+        {/* 팀 이름 — 서비스 이름과 같은 꼴, 색만 하양. 누르면 방 정보. */}
+        <button
+          onClick={() => setRoomOpen(true)}
+          className="neon min-w-0 truncate text-[18px] leading-none font-bold tracking-widest whitespace-nowrap text-white"
+        >
+          {me.room.name}
+        </button>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-xl flex-1 px-4 pb-10">
+      <main className="relative z-10 mx-auto w-full max-w-xl flex-1 px-4 pb-28">
         {/* 방을 바꾸면 다른 항로다 — key로 통째로 새로 띄운다. */}
         <Orbit key={me.room.id} />
       </main>
+
+      {/* 하단 중앙 그룹 버튼 — 참여하는 팀 목록을 연다. */}
+      <button
+        onClick={() => setSwitchOpen(true)}
+        aria-label="그룹"
+        className="fixed bottom-6 left-1/2 z-40 grid h-14 w-14 -translate-x-1/2 place-items-center rounded-full border border-orbit-cyan/50 bg-[#0a1226]/90 backdrop-blur transition active:scale-95"
+        style={{ boxShadow: '0 0 18px rgba(0,212,255,0.35), inset 0 0 12px rgba(0,212,255,0.12)' }}
+      >
+        <Users
+          className="h-6 w-6 text-orbit-cyan"
+          style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,255,0.95))' }}
+        />
+      </button>
 
       <Sheet dark center open={roomOpen} onClose={() => setRoomOpen(false)} title={me.room.name}>
         <div className="space-y-4">
@@ -146,7 +145,7 @@ function Main({ me, refresh }) {
         {adminOpen && <OrbitAdmin />}
       </Sheet>
 
-      <Sheet dark center open={switchOpen} onClose={() => setSwitchOpen(false)} title="방 전환">
+      <Sheet dark center open={switchOpen} onClose={() => setSwitchOpen(false)} title="내 팀">
         <MyRooms
           me={me}
           onSwitched={async () => {
@@ -174,36 +173,8 @@ function Main({ me, refresh }) {
   )
 }
 
-/* 내 방 목록 — 여러 방(항로)을 오간다. 방마다 이름에서 뽑은 색의 행성을 달아
- * 한눈에 구분되게 한다. 지금 방은 네온으로 밝히고, 다른 방은 줄 전체가 버튼이다. */
-function roomHue(name) {
-  let h = 0
-  for (const ch of name) h = (h * 31 + ch.codePointAt(0)) % 360
-  return h
-}
-
-function RoomPlanet({ name, lit }) {
-  const hue = roomHue(name)
-  return (
-    <span
-      className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full"
-      style={{
-        background: `radial-gradient(circle at 32% 30%, hsl(${hue} 85% 66%), hsl(${hue} 70% 38%) 58%, hsl(${hue} 60% 20%))`,
-        boxShadow: lit
-          ? `0 0 16px hsl(${hue} 90% 60% / 0.55), inset -4px -5px 10px rgb(0 0 0 / 0.45)`
-          : 'inset -4px -5px 10px rgb(0 0 0 / 0.45)',
-      }}
-    >
-      {/* 행성 고리 */}
-      <span
-        className="absolute h-4 w-[52px] rounded-full border"
-        style={{ borderColor: `hsl(${hue} 80% 75% / 0.55)`, transform: 'rotate(-18deg)' }}
-      />
-      <span className="text-[16px] font-bold text-white/90">{name.slice(0, 1)}</span>
-    </span>
-  )
-}
-
+/* 내 방 목록 — 참여하는 팀이 세로로 나란히 선다. 지금 팀은 네온으로 밝히고,
+ * 다른 팀은 줄 전체가 버튼이다. */
 function MyRooms({ me, onSwitched, onAdd }) {
   const [busy, setBusy] = useState(null)
   const [err, setErr] = useState(null)
@@ -213,12 +184,10 @@ function MyRooms({ me, onSwitched, onAdd }) {
     <div className="space-y-2.5">
       {err && <p className="px-1 text-[13px] text-orbit-red">{err}</p>}
 
-      {/* 지금 항로 */}
       <div
-        className="flex items-center gap-3 rounded-2xl border border-orbit-cyan/50 bg-orbit-cyan/10 p-3.5"
+        className="flex items-center gap-3 rounded-2xl border border-orbit-cyan/50 bg-orbit-cyan/10 px-4 py-4"
         style={{ boxShadow: '0 0 18px rgba(0,212,255,0.16)' }}
       >
-        <RoomPlanet name={me.room.name} lit />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[16px] font-bold text-orbit-text">{me.room.name}</div>
           <div className="mt-0.5 text-[12px] text-orbit-cyan/80">
@@ -226,11 +195,10 @@ function MyRooms({ me, onSwitched, onAdd }) {
           </div>
         </div>
         <span className="neon shrink-0 text-[11px] font-bold tracking-widest text-orbit-cyan">
-          현재 항로
+          현재 팀
         </span>
       </div>
 
-      {/* 다른 항로 — 줄 전체가 버튼 */}
       {others.map((r) => (
         <button
           key={r.id}
@@ -247,9 +215,8 @@ function MyRooms({ me, onSwitched, onAdd }) {
               setBusy(null)
             }
           }}
-          className="flex w-full items-center gap-3 rounded-2xl border border-white/12 bg-white/5 p-3.5 text-left transition hover:border-orbit-cyan/35 hover:bg-orbit-cyan/5 disabled:opacity-50"
+          className="flex w-full items-center gap-3 rounded-2xl border border-white/12 bg-white/5 px-4 py-4 text-left transition hover:border-orbit-cyan/35 hover:bg-orbit-cyan/5 disabled:opacity-50"
         >
-          <RoomPlanet name={r.name} />
           <div className="min-w-0 flex-1">
             <div className="truncate text-[16px] font-bold text-orbit-text">{r.name}</div>
             {r.isOwner && <div className="mt-0.5 text-[12px] text-orbit-dim">방장</div>}
@@ -260,7 +227,6 @@ function MyRooms({ me, onSwitched, onAdd }) {
         </button>
       ))}
 
-      {/* 새 항로 */}
       <button
         onClick={onAdd}
         className="w-full rounded-2xl border border-dashed border-orbit-cyan/35 bg-transparent py-3.5 text-[14px] font-bold text-orbit-cyan/90 transition hover:bg-orbit-cyan/5"
