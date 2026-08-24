@@ -306,8 +306,8 @@ export function StudySession({
         <motion.div
           className="flex w-full flex-col items-center gap-7"
           initial={false}
-          animate={{ opacity: dim ? 0 : 1 }}
-          transition={{ duration: dim ? 0.42 : 0.45, ease: 'easeOut' }}
+          animate={{ opacity: dim ? 0 : 1, y: dim ? 14 : 0 }}
+          transition={{ duration: dim ? 0.42 : 0.5, ease: 'easeOut' }}
         >
           <div className="w-full">
             <IncomingMissiles missiles={missiles} fleet={fleet} />
@@ -373,22 +373,28 @@ export function StudySession({
             연출 중에도 사라지지 않으므로 함선은 한 마리가 계속 이어진다. */}
         <motion.div
           layoutId="my-ship-transit"
-          transition={{ layout: { type: 'tween', duration: 1.0, ease: [0.3, 0, 0.2, 1] } }}
+          transition={{ layout: { type: 'tween', duration: 1.05, ease: [0.55, 0, 0.15, 1] } }}
         >
-          <Spaceship
-            status={statusOf(energy)}
-            isStudying={energy > 0 && !finishing}
-            shields={shields}
-            energy={energy}
-            size={140}
-          />
+          <motion.div
+            initial={false}
+            animate={{ scale: dim ? 1.07 : 1 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
+            <Spaceship
+              status={statusOf(energy)}
+              isStudying={energy > 0 && !finishing}
+              shields={shields}
+              energy={energy}
+              size={140}
+            />
+          </motion.div>
         </motion.div>
 
         <motion.div
           className="flex w-full flex-col items-center gap-7"
           initial={false}
-          animate={{ opacity: dim ? 0 : 1 }}
-          transition={{ duration: dim ? 0.42 : 0.45, ease: 'easeOut' }}
+          animate={{ opacity: dim ? 0 : 1, y: dim ? 14 : 0 }}
+          transition={{ duration: dim ? 0.42 : 0.5, ease: 'easeOut', delay: dim ? 0 : 0.12 }}
         >
           {/* 앞뒤 사람과의 격차 */}
           {(neighbours.ahead || neighbours.behind) && (

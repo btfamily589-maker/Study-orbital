@@ -1813,15 +1813,22 @@ export function ShipHero({ ship, isStudying, dim = false }) {
           한 마리로 이어져, 화면이 바뀔 때 이 자리에서 저 자리로 날아간다. */}
       <motion.div
         layoutId="my-ship-transit"
-        transition={{ layout: { type: 'tween', duration: 1.0, ease: [0.3, 0, 0.2, 1] } }}
+        transition={{ layout: { type: 'tween', duration: 1.05, ease: [0.55, 0, 0.15, 1] } }}
       >
-        <Spaceship
-          status={ship.status}
-          isStudying={isStudying}
-          shields={ship.shields ?? 0}
-          energy={energy}
-          size={150}
-        />
+        {/* 연출 중엔 살짝 커진다 — 엔진에 힘이 들어간 느낌. 도착하면 원래대로. */}
+        <motion.div
+          initial={false}
+          animate={{ scale: dim ? 1.07 : 1 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        >
+          <Spaceship
+            status={ship.status}
+            isStudying={isStudying}
+            shields={ship.shields ?? 0}
+            energy={energy}
+            size={150}
+          />
+        </motion.div>
       </motion.div>
       {/* 거리·속도·순위를 같은 크기·같은 파란색으로 나란히 둔다. 예전엔 순위만
           아래에 작은 회색 글씨로 따로 적혀 있어서 곁다리처럼 보였는데, 셋 다

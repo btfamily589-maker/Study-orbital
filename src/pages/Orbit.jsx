@@ -151,24 +151,32 @@ function JoinCard({ onJoined }) {
 export const TRANSIT_OUT_MS = 420
 export const TRANSIT_MOVE_MS = 1050
 
-/* 계기 한 덩어리. 연출이 도는 동안 스르르 빠졌다가 도착하면 다시 뜬다.
+/* 계기 한 덩어리. 연출이 돌면 살짝 밀려나며 빠졌다가, 도착하면 아래에서
+ * 떠오른다. delay를 주면 여러 덩어리가 순서대로 뜬다(계기 부팅 느낌).
  * initial={false}라 화면이 새로 붙을 때는 애니메이션 없이 곧장 그 값이다 —
  * 새 화면의 계기는 '숨은 채' 붙었다가 연출이 끝나면 뜬다. */
-function Fading({ dim, className, children }) {
+function Fading({ dim, delay = 0, className, children }) {
   return (
     <motion.div
       className={className}
       initial={false}
-      animate={{ opacity: dim ? 0 : 1 }}
-      transition={{ duration: dim ? TRANSIT_OUT_MS / 1000 : 0.45, ease: 'easeOut' }}
+      animate={{ opacity: dim ? 0 : 1, y: dim ? 14 : 0 }}
+      transition={{
+        duration: dim ? TRANSIT_OUT_MS / 1000 : 0.5,
+        ease: 'easeOut',
+        delay: dim ? 0 : delay,
+      }}
     >
       {children}
     </motion.div>
   )
 }
 
-/** 함선이 나는 동안에만 흐르는 워프 광선. 배경을 칠하지 않는다. */
-function WarpTrails() {
+/** 함선이 나는 동안에만 흐르는 워프. 배경을 칠하지 않는다 — 광선·잔별·
+ * 가장자리 비네트가 별밭 위에 겹칠 뿐이라 화면이 어두워지는 순간이 없다.
+ * 발사는 위로, 귀환은 아래로 흐른다(감속해 내려앉는 느낌). */
+function WarpTrails({ dir = 'launch' }) {
+  const up = dir === 'launch'
   return (
     <motion.div
       className="pointer-events-none fixed inset-0 z-40 overflow-hidden"
@@ -177,22 +185,59 @@ function WarpTrails() {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3, ease: 'linear' }}
     >
-      {Array.from({ length: 16 }, (_, i) => (
+      {/* 가장자리만 살짝 물드는 시안 비네트 — 속도감. 중앙은 투명하다. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, transparent 52%, rgba(0,212,255,0.12) 100%)',
+        }}
+      />
+
+      {/* 광선. 다섯에 하나는 굵고 밝은 코어 광선 — 빛무리를 단다. */}
+      {Array.from({ length: 26 }, (_, i) => {
+        const bright = i % 5 === 0
+        return (
+          <motion.span
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              width: bright ? 3 : i % 3 === 0 ? 2 : 1,
+              left: `${(i * 47 + 11) % 100}%`,
+              height: (60 + (i % 6) * 30) * (bright ? 1.4 : 1),
+              background:
+                i % 4 === 3
+                  ? 'rgba(143,107,255,0.75)'
+                  : bright
+                    ? 'rgba(170,238,255,0.95)'
+                    : 'rgba(0,212,255,0.6)',
+              boxShadow: bright ? '0 0 8px rgba(0,212,255,0.9)' : 'none',
+            }}
+            initial={{ top: up ? '112%' : '-45%', opacity: 0 }}
+            animate={{ top: up ? '-45%' : '112%', opacity: [0, 1, 0.9, 0] }}
+            transition={{
+              duration: (bright ? 0.5 : 0.62) + (i % 5) * 0.12,
+              repeat: Infinity,
+              ease: 'linear',
+              delay: (i % 8) * 0.08,
+            }}
+          />
+        )
+      })}
+
+      {/* 흐르는 잔별 — 광선보다 느리게 지나가 원근이 생긴다. */}
+      {Array.from({ length: 18 }, (_, i) => (
         <motion.span
-          key={i}
-          className="absolute w-[2px] rounded-full"
-          style={{
-            left: `${(i * 61 + 7) % 100}%`,
-            height: 70 + (i % 5) * 34,
-            background: i % 4 === 3 ? 'rgba(143,107,255,0.7)' : 'rgba(0,212,255,0.7)',
-          }}
-          initial={{ top: '112%', opacity: 0 }}
-          animate={{ top: '-35%', opacity: [0, 1, 0.9, 0] }}
+          key={`s${i}`}
+          className="absolute rounded-full bg-white"
+          style={{ width: 1.5, height: 1.5, left: `${(i * 59 + 23) % 100}%`, opacity: 0.55 }}
+          initial={{ top: up ? '105%' : '-5%' }}
+          animate={{ top: up ? '-5%' : '105%' }}
           transition={{
-            duration: 0.62 + (i % 4) * 0.14,
+            duration: 1.1 + (i % 4) * 0.3,
             repeat: Infinity,
             ease: 'linear',
-            delay: (i % 7) * 0.09,
+            delay: (i % 6) * 0.15,
           }}
         />
       ))}
@@ -1619,7 +1664,9 @@ export default function Orbit() {
   const dim = transit !== null
   return (
     <>
-      <AnimatePresence>{transit?.phase === 'move' && <WarpTrails />}</AnimatePresence>
+      <AnimatePresence>
+        {transit?.phase === 'move' && <WarpTrails dir={transit.dir} />}
+      </AnimatePresence>
       {showStudy ? (
         <StudySession
           dim={dim}
@@ -1692,7 +1739,7 @@ export default function Orbit() {
             <div className="space-y-4">
               {/* 함선은 연출 내내 보인다 — 숫자만 빠진다. */}
               <ShipHero ship={state.ship} isStudying={false} dim={dim} />
-              <Fading dim={dim} className="space-y-4">
+              <Fading dim={dim} delay={0.12} className="space-y-4">
                 {/* 날아오는 게 있으면 함선 상태 바로 다음에 알린다 — 방어막을 살지
                 말지가 여기서 갈린다. 없으면 아무것도 안 그린다. */}
                 <IncomingMissiles missiles={state.missiles} fleet={state.fleet} />
