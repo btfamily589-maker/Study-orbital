@@ -53,31 +53,35 @@ function Main({ me, refresh }) {
     <>
       {/* 별밭은 화면이 바뀌어도 그대로 있어야 한다 — 여기 한 번만 깐다. */}
       <Starfield />
-      {/* 상단 바 — 서비스 이름과 지금 방. 방 이름을 누르면 초대코드가 뜬다. */}
-      <header className="relative z-10 flex items-center justify-between gap-3 px-5 pt-4 pb-2">
-        <div className="neon text-[18px] leading-none font-bold tracking-widest text-orbit-cyan">
+      {/* 상단 바 — 서비스 이름은 오른쪽 위 한 줄, 그 아래에 지금 방이 크게 온다.
+          방 이름은 매번 보는 것이라 서비스 이름보다 큼직해야 한다. */}
+      <header className="relative z-10 px-5 pt-3 pb-2">
+        <div className="neon text-right text-[13px] leading-none font-bold tracking-[0.2em] text-orbit-cyan">
           STUDY ORBITAL
         </div>
+
         {/* 현재 방 이름+설정 | ⇄ 방 전환. 이름을 누르면 방 정보, 오른쪽은 내 방 목록. */}
-        <div className="flex min-w-0 items-center overflow-hidden rounded-full border border-white/15 bg-white/5">
-          <button
-            onClick={() => setRoomOpen(true)}
-            className="flex min-w-0 items-center gap-1.5 py-1.5 pr-2.5 pl-3 text-[13px] font-semibold text-orbit-text"
-          >
-            <span className="max-w-[6.5rem] truncate">{me.room.name}</span>
-            <Settings
-              className="h-3.5 w-3.5 shrink-0 text-orbit-cyan"
-              style={{ filter: 'drop-shadow(0 0 4px rgba(0,212,255,0.9))' }}
-            />
-          </button>
-          <span className="h-4 w-px shrink-0 bg-white/20" />
-          <button
-            onClick={() => setSwitchOpen(true)}
-            className="flex shrink-0 items-center gap-1 py-1.5 pr-3 pl-2.5 text-[12px] font-bold text-orbit-cyan"
-          >
-            <span className="text-[14px] leading-none">⇄</span>
-            <span>방 전환</span>
-          </button>
+        <div className="mt-2.5 flex">
+          <div className="flex min-w-0 items-center overflow-hidden rounded-full border border-white/15 bg-white/5">
+            <button
+              onClick={() => setRoomOpen(true)}
+              className="flex min-w-0 items-center gap-2 py-2.5 pr-3.5 pl-4 text-[19px] font-bold text-orbit-text"
+            >
+              <span className="max-w-[9rem] truncate">{me.room.name}</span>
+              <Settings
+                className="h-5 w-5 shrink-0 text-orbit-cyan"
+                style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,255,0.9))' }}
+              />
+            </button>
+            <span className="h-6 w-px shrink-0 bg-white/20" />
+            <button
+              onClick={() => setSwitchOpen(true)}
+              className="flex shrink-0 items-center gap-1.5 py-2.5 pr-4 pl-3 text-[15px] font-bold text-orbit-cyan"
+            >
+              <span className="text-[18px] leading-none">⇄</span>
+              <span>방 전환</span>
+            </button>
+          </div>
         </div>
       </header>
 
