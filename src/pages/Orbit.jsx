@@ -146,14 +146,28 @@ function JoinCard({ onJoined }) {
  * 스스로 어두워지며 공부 화면을 드러낸다. 실제 세션은 이미 서버에서 돌기 시작한
  * 뒤라, 이 화면은 순수하게 눈맛이다. */
 export const LAUNCH_MS = 2400
+/** 화면이 바뀐 뒤 어둠이 걷히는 시간. 이 밑에서 함선이 계기 자리로 날아든다. */
+export const LANDING_MS = 700
+
+function LandingVeil() {
+  return (
+    <motion.div
+      className="pointer-events-none fixed inset-0 z-50"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 0 }}
+      transition={{ duration: LANDING_MS / 1000, ease: 'easeOut' }}
+      style={{ background: '#05070f' }}
+    />
+  )
+}
 
 function LaunchOverlay() {
   return (
     <motion.div
       className="pointer-events-none fixed inset-0 z-50 overflow-hidden"
       initial={{ opacity: 0 }}
-      animate={{ opacity: [0, 1, 1, 0] }}
-      transition={{ duration: LAUNCH_MS / 1000, times: [0, 0.14, 0.8, 1], ease: 'linear' }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, ease: 'linear' }}
       style={{ background: '#05070f' }}
     >
       {/* 워프 광선 — 아래에서 위로 가속 */}
@@ -1456,6 +1470,8 @@ export default function Orbit() {
   const [igniting, setIgniting] = useState(false)
   /* 이번 세션이 발사 연출을 타고 시작됐는가 — 새로고침으로 복귀한 세션과 구분한다. */
   const [justLaunched, setJustLaunched] = useState(false)
+  /* 연출이 끝나고 공부 화면이 깔린 직후, 그 위에서 걷히는 어둠. */
+  const [landing, setLanding] = useState(false)
   /* uid → 프사(data URL). 함선 옆에 띄운다. 프사는 자주 안 바뀌니 20초 폴링에
    * 얹지 않고 들어올 때 한 번만 받는다. */
   const [photos, setPhotos] = useState({})
@@ -1510,9 +1526,20 @@ export default function Orbit() {
 
   useEffect(() => {
     if (!igniting) return
-    const t = setTimeout(() => setIgniting(false), LAUNCH_MS)
+    const t = setTimeout(() => {
+      /* 오버레이가 걷히기 전에 화면부터 공부 화면으로 바꾼다 — 오버레이가
+       * 먼저 투명해지면 그 밑의 홈 화면이 비쳐서 연출이 끊겨 보인다. */
+      setIgniting(false)
+      setLanding(true)
+    }, LAUNCH_MS)
     return () => clearTimeout(t)
   }, [igniting])
+
+  useEffect(() => {
+    if (!landing) return
+    const t = setTimeout(() => setLanding(false), LANDING_MS + 100)
+    return () => clearTimeout(t)
+  }, [landing])
 
   /* 맵의 위치·미사일은 서버가 계산해 주므로, 남이 공부하거나 쏜 걸 보려면 주기적으로
    * 다시 받아야 한다. 화면을 보고 있을 때만 20초마다.
@@ -1594,6 +1621,7 @@ export default function Orbit() {
   if (session && !igniting) {
     return (
       <>
+        {landing && <LandingVeil />}
         <StudySession
           entering={justLaunched}
           session={session}
