@@ -18,6 +18,7 @@ import {
 import { Sheet } from '../components/ui'
 import { OrbitButton } from '../components/OrbitButton'
 import { prettyDate, ymd } from '../lib/date'
+import { fetchRoomPhotos } from '../lib/rooms'
 import { IncomingMissiles, RouteMap, ShieldDomeIcon, ShipHero } from '../components/orbit/RouteMap'
 import { StudySession } from '../components/orbit/StudySession'
 import { WeaponIcon } from '../components/orbit/WeaponIcon'
@@ -1395,6 +1396,9 @@ export default function Orbit() {
   // 정지를 누르면 기록 입력 화면으로 넘어간다. 이때도 세션은 아직 살아 있다.
   const [finishing, setFinishing] = useState(false)
   const [saving, setSaving] = useState({ busy: false, error: null })
+  /* uid → 프사(data URL). 함선 옆에 띄운다. 프사는 자주 안 바뀌니 20초 폴링에
+   * 얹지 않고 들어올 때 한 번만 받는다. */
+  const [photos, setPhotos] = useState({})
   const seq = useRef(0)
 
   const load = useCallback(async () => {
@@ -1439,6 +1443,9 @@ export default function Orbit() {
 
   useEffect(() => {
     load()
+    fetchRoomPhotos()
+      .then(setPhotos)
+      .catch(() => {})
   }, [load])
 
   /* 맵의 위치·미사일은 서버가 계산해 주므로, 남이 공부하거나 쏜 걸 보려면 주기적으로
@@ -1607,7 +1614,7 @@ export default function Orbit() {
         </div>
       )}
 
-      {view === 'map' && <RouteMap fleet={state.fleet} missiles={state.missiles} />}
+      {view === 'map' && <RouteMap fleet={state.fleet} missiles={state.missiles} photos={photos} />}
 
       {view === 'combat' && (
         <Combat ship={state.ship} fleet={state.fleet} missiles={state.missiles} onChanged={load} />

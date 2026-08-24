@@ -213,7 +213,50 @@ app.get('/api/me', requireUser, async (req, res) => {
       }
     }
   }
-  res.json({ uid: req.user.uid, name: req.user.name, room })
+  res.json({ uid: req.user.uid, name: req.user.name, photo: req.user.photo ?? null, room })
+})
+
+/* ---------------- 프사 ---------------- */
+
+/** 프사 올리기/지우기(null). 클라이언트가 160px 정사각으로 줄여 보낸 data URL을
+ * 그대로 든다 — 예전 Replit 앱과 같은 방식이라 별도 스토리지 없이 문서에 들어갈
+ * 크기다. 방 명부에도 복사해 둔다(함선 옆에 띄울 때 방 단위로 한 번에 읽는다). */
+app.post('/api/me/photo', requireUser, async (req, res) => {
+  const photo = req.body?.photo ?? null
+  if (photo !== null) {
+    if (typeof photo !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(photo)) {
+      return res.status(400).json({ error: '이미지 파일이 아닙니다.' })
+    }
+    if (photo.length > 200_000) {
+      return res.status(400).json({ error: '사진이 너무 큽니다. 다른 사진으로 해보세요.' })
+    }
+  }
+  try {
+    await db().doc(`users/${req.user.uid}`).update({ photo })
+    if (req.user.roomId) {
+      await db()
+        .doc(`rooms/${req.user.roomId}/members/${req.user.uid}`)
+        .set({ photo }, { merge: true })
+    }
+    res.json({ ok: true })
+  } catch (e) {
+    console.error('[me/photo]', e)
+    res.status(502).json({ error: '사진을 저장하지 못했습니다.' })
+  }
+})
+
+/** 방 참가자들의 프사. uid → data URL. 프사 없는 사람은 아예 안 실린다. */
+app.get('/api/room/photos', requireUser, async (req, res) => {
+  if (!req.user.roomId) return res.json({})
+  try {
+    const snap = await db().collection(`rooms/${req.user.roomId}/members`).get()
+    const out = {}
+    for (const d of snap.docs) if (d.data().photo) out[d.id] = d.data().photo
+    res.json(out)
+  } catch (e) {
+    console.error('[room/photos]', e)
+    res.status(502).json({ error: '사진을 불러오지 못했습니다.' })
+  }
 })
 
 /** 방 만들기. 만든 사람이 방장(orbit의 운영자)이 된다. */
@@ -242,6 +285,7 @@ app.post('/api/room/create', requireUser, async (req, res) => {
           name: req.user.name,
           role: 'admin',
           joinedAt: new Date().toISOString(),
+          ...(req.user.photo ? { photo: req.user.photo } : {}),
         })
         tx.update(db().doc(`users/${req.user.uid}`), { roomId: roomRef.id })
         return { id: roomRef.id, code }
@@ -271,19 +315,19 @@ app.post('/api/room/join', requireUser, async (req, res) => {
     if (!roomSnap.exists) return res.status(404).json({ error: '없어진 방입니다.' })
 
     /* 명부는 merge로 쓴다 — 나갔다 돌아온 사람의 역할(role)을 지우지 않는다. */
+    const member = {
+      name: req.user.name,
+      role: 'member',
+      joinedAt: new Date().toISOString(),
+      ...(req.user.photo ? { photo: req.user.photo } : {}),
+    }
+    const mergeFields = ['name', 'joinedAt', ...(req.user.photo ? ['photo'] : [])]
     await db()
       .doc(`rooms/${roomId}/members/${req.user.uid}`)
-      .set(
-        { name: req.user.name, role: 'member', joinedAt: new Date().toISOString() },
-        { mergeFields: ['name', 'joinedAt'] },
-      )
+      .set(member, { mergeFields })
       .catch(async () => {
         // 처음 참가면 mergeFields 대상 문서가 없어 실패할 수 있다 — 통째로 만든다.
-        await db().doc(`rooms/${roomId}/members/${req.user.uid}`).set({
-          name: req.user.name,
-          role: 'member',
-          joinedAt: new Date().toISOString(),
-        })
+        await db().doc(`rooms/${roomId}/members/${req.user.uid}`).set(member)
       })
     await db().doc(`users/${req.user.uid}`).update({ roomId })
     res.json({ ok: true, roomId, name: roomSnap.data().name })
@@ -340,10 +384,7 @@ async function orbitTick() {
   ticking = true
   try {
     if (!(await ensureAdmin())) return
-    const snap = await db()
-      .collectionGroup('orbitAttacks')
-      .where('status', '==', 'in_flight')
-      .get()
+    const snap = await db().collectionGroup('orbitAttacks').where('status', '==', 'in_flight').get()
     const roomIds = new Set(
       snap.docs
         .map((d) => d.ref.parent.parent)

@@ -25,3 +25,7 @@ export const fetchMe = () => call('/api/me')
 export const createRoom = (name) => call('/api/room/create', { method: 'POST', body: { name } })
 export const joinRoom = (code) => call('/api/room/join', { method: 'POST', body: { code } })
 export const leaveRoom = () => call('/api/room/leave', { method: 'POST' })
+/** 프사 바꾸기(data URL) 또는 지우기(null). */
+export const setMyPhoto = (photo) => call('/api/me/photo', { method: 'POST', body: { photo } })
+/** 방 참가자들의 프사 — { uid: dataUrl }. 함선 옆에 띄운다. */
+export const fetchRoomPhotos = () => call('/api/room/photos')

@@ -5,7 +5,8 @@ import Orbit from './pages/Orbit'
 import OrbitAdmin from './components/OrbitAdmin'
 import { OrbitButton } from './components/OrbitButton'
 import { Sheet } from './components/ui'
-import { leaveRoom } from './lib/rooms'
+import { leaveRoom, setMyPhoto } from './lib/rooms'
+import { compressProfilePhoto } from './lib/photo'
 import { logout } from './lib/firebase'
 
 /* Study Orbital 앱 껍데기.
@@ -62,6 +63,8 @@ function Main({ me, refresh }) {
             참가자 {me.room.memberCount}명
           </div>
 
+          <PhotoRow me={me} refresh={refresh} />
+
           {me.room.isOwner && (
             <OrbitButton
               className="w-full"
@@ -102,5 +105,74 @@ function Main({ me, refresh }) {
         {adminOpen && <OrbitAdmin />}
       </Sheet>
     </>
+  )
+}
+
+/* 프사 줄 — 내 사진과 바꾸기/지우기. 함선 옆에 뜨는 사진이다.
+ * 예전 Replit 앱의 프로필 사진을 옮겨온 것: 클라이언트에서 160px로 줄여 올린다. */
+function PhotoRow({ me, refresh }) {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+
+  async function save(photo) {
+    setBusy(true)
+    setErr(null)
+    try {
+      await setMyPhoto(photo)
+      await refresh()
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-white/12 bg-white/5 p-3">
+      {me.photo ? (
+        <img
+          src={me.photo}
+          alt="프사"
+          className="h-12 w-12 shrink-0 rounded-full border border-orbit-cyan/50 object-cover"
+        />
+      ) : (
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10 text-[17px] font-bold text-orbit-dim">
+          {me.name.slice(0, 1)}
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="text-[14px] font-semibold">프사</div>
+        <div className="text-[12px] text-orbit-dim">함선 옆에 뜹니다</div>
+        {err && <div className="mt-0.5 text-[12px] text-orbit-red">{err}</div>}
+      </div>
+      <label className="shrink-0 cursor-pointer rounded-lg bg-orbit-cyan/15 px-3 py-2 text-[13px] font-bold text-orbit-cyan">
+        {busy ? '올리는 중…' : me.photo ? '바꾸기' : '올리기'}
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          disabled={busy}
+          onChange={async (e) => {
+            const file = e.target.files?.[0]
+            e.target.value = ''
+            if (!file) return
+            try {
+              await save(await compressProfilePhoto(file))
+            } catch (er) {
+              setErr(er.message)
+            }
+          }}
+        />
+      </label>
+      {me.photo && (
+        <button
+          disabled={busy}
+          onClick={() => save(null)}
+          className="shrink-0 rounded-lg px-2 py-2 text-[13px] font-semibold text-orbit-dim"
+        >
+          지우기
+        </button>
+      )}
+    </div>
   )
 }

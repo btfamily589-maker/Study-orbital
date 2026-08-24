@@ -371,6 +371,8 @@ function ShipGlyph({
   rank,
   isMe,
   nickname,
+  /** 프사(data URL). 있으면 등수 배지 반대편에 동그랗게 띄운다. */
+  photo,
   energy,
   shields = 0,
   reflect = 0,
@@ -529,10 +531,26 @@ function ShipGlyph({
                     {/* 같은 자리에 두 stop을 겹쳐 띠를 또렷하게 끊는다. */}
                     <stop offset="0%" stopColor={d.color} stopOpacity="0" />
                     <stop offset="62%" stopColor={d.color} stopOpacity="0" />
-                    <stop offset="62%" stopColor={d.color} stopOpacity={0.02 + domeStrength * 0.06} />
-                    <stop offset="86%" stopColor={d.color} stopOpacity={0.02 + domeStrength * 0.06} />
-                    <stop offset="86%" stopColor={d.color} stopOpacity={0.05 + domeStrength * 0.18} />
-                    <stop offset="100%" stopColor={d.color} stopOpacity={0.05 + domeStrength * 0.18} />
+                    <stop
+                      offset="62%"
+                      stopColor={d.color}
+                      stopOpacity={0.02 + domeStrength * 0.06}
+                    />
+                    <stop
+                      offset="86%"
+                      stopColor={d.color}
+                      stopOpacity={0.02 + domeStrength * 0.06}
+                    />
+                    <stop
+                      offset="86%"
+                      stopColor={d.color}
+                      stopOpacity={0.05 + domeStrength * 0.18}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor={d.color}
+                      stopOpacity={0.05 + domeStrength * 0.18}
+                    />
                   </radialGradient>
                   <clipPath id={`${shieldClipId}-${di}`}>
                     <ellipse cx={x} cy={y} rx={SHIELD_RX + d.pad} ry={SHIELD_RY + d.pad} />
@@ -560,10 +578,7 @@ function ShipGlyph({
 
                 {/* 육각 격자. 겹칠 때 안쪽 것이 다 가려지지 않게 바깥 돔일수록
                     더 바깥쪽 고리에만 그린다. */}
-                <g
-                  clipPath={`url(#${shieldClipId}-${di})`}
-                  opacity={0.15 + domeStrength * 0.35}
-                >
+                <g clipPath={`url(#${shieldClipId}-${di})`} opacity={0.15 + domeStrength * 0.35}>
                   {Array.from({ length: 6 }, (_, i) => {
                     const angle = (i * 60 * Math.PI) / 180
                     const ring = 0.58 + di * 0.16
@@ -593,6 +608,32 @@ function ShipGlyph({
         {/* 좌우를 가르는 자리. 색이 딱 끊기는 것만으로 경계가 보이므로 선 자체는
             안 보이게 둔다 — 검은 줄이 배 한가운데를 갈라놓아 오히려 지저분했다. */}
         <line x1={x} y1={y - 15} x2={x} y2={y + 10} stroke="transparent" strokeWidth={0.8} />
+
+        {/* 프사. 등수 배지의 반대편(왼쪽 위)에 동그랗게 — 배지와 짝을 이룬다. */}
+        {photo && (
+          <>
+            <clipPath id={`avatar-${gradId}`}>
+              <circle cx={x - 15} cy={y - 11} r={7} />
+            </clipPath>
+            <image
+              href={photo}
+              x={x - 22}
+              y={y - 18}
+              width={14}
+              height={14}
+              clipPath={`url(#avatar-${gradId})`}
+              preserveAspectRatio="xMidYMid slice"
+            />
+            <circle
+              cx={x - 15}
+              cy={y - 11}
+              r={7}
+              fill="none"
+              stroke={isMe ? '#00d4ff' : 'rgba(255,255,255,0.75)'}
+              strokeWidth={1}
+            />
+          </>
+        )}
 
         {/* 등수 배지. 1등만 금색. */}
         <circle
@@ -1028,8 +1069,7 @@ function MissileTrail({ missile, fromX, fromY, toX, toY, now, offset, bow = 0 })
           const ibx = (toX + cx) / 2 - iuy * (idist * 0.22)
           const iby = (toY + cy) / 2 + iux * (idist * 0.22)
           const tot = (missile.interceptAt ?? 0) - (missile.interceptStartAt ?? 0)
-          const p =
-            tot > 0 ? Math.min(1, Math.max(0, (now - missile.interceptStartAt) / tot)) : 0
+          const p = tot > 0 ? Math.min(1, Math.max(0, (now - missile.interceptStartAt) / tot)) : 0
           const pTail = Math.max(0, p - MISSILE_TAIL / idist)
           const iCurve = (t0, t1, steps) => qPath(toX, toY, ibx, iby, cx, cy, t0, t1, steps)
           const [ix, iy] = qPoint(toX, toY, ibx, iby, cx, cy, p)
@@ -1303,7 +1343,7 @@ export function IncomingMissiles({ missiles = [], fleet = [] }) {
   )
 }
 
-export function RouteMap({ fleet, missiles = [] }) {
+export function RouteMap({ fleet, missiles = [], photos = {} }) {
   const [selectedUid, setSelectedUid] = useState(null)
   /* 지금 보고 있는 페이지. null이면 "아직 안 넘겨봤다"는 뜻이고, 그동안은 내
    * 배가 있는 페이지를 따라간다 — 열자마자 내가 안 보이면 소용이 없다. */
@@ -1642,6 +1682,7 @@ export function RouteMap({ fleet, missiles = [] }) {
                   rank={rank + 1}
                   isMe={p.isMe}
                   nickname={p.nickname}
+                  photo={photos[p.uid]}
                   energy={p.energy ?? 0}
                   shields={p.shields ?? 0}
                   reflect={p.reflect ?? 0}
