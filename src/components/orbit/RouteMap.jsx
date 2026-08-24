@@ -613,21 +613,21 @@ function ShipGlyph({
         {photo && (
           <>
             <clipPath id={`avatar-${gradId}`}>
-              <circle cx={x - 18} cy={y - 14} r={10} />
+              <circle cx={x - 22} cy={y - 17} r={14} />
             </clipPath>
             <image
               href={photo}
-              x={x - 28}
-              y={y - 24}
-              width={20}
-              height={20}
+              x={x - 36}
+              y={y - 31}
+              width={28}
+              height={28}
               clipPath={`url(#avatar-${gradId})`}
               preserveAspectRatio="xMidYMid slice"
             />
             <circle
-              cx={x - 18}
-              cy={y - 14}
-              r={10}
+              cx={x - 22}
+              cy={y - 17}
+              r={14}
               fill="none"
               stroke={isMe ? '#00d4ff' : 'rgba(255,255,255,0.75)'}
               strokeWidth={1.2}
@@ -1444,7 +1444,8 @@ export function RouteMap({ fleet, missiles = [], photos = {} }) {
   /* 위아래 여백. 배 도형이 위로 얼마나 솟고 아래로 얼마나 늘어지는지에만 맞춘다.
    * 위쪽은 뱃머리(-15)와 등수 배지(-18)까지, 아래쪽은 이름(+30)과 에너지
    * 막대(+36)까지. */
-  const TOP_PAD = 22
+  /* 커진 프사(반지름 14, 함선 왼쪽 위)까지 안 잘리게 여유를 둔다. */
+  const TOP_PAD = 34
   const BOT_PAD = 46
   /* 한 장의 좌표 높이. 상자의 실제 가로세로비를 그대로 좌표로 옮겨서, 지도가
    * 상자를 여백 없이 꽉 채우게 한다(viewBox 비율 = 상자 비율이면 여백이 안 남는다).
