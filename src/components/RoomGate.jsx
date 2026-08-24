@@ -39,10 +39,10 @@ export default function RoomGate({ children }) {
   }
   if (me.room) return children({ me, refresh })
 
-  return <RoomPicker me={me} onDone={refresh} />
+  return <RoomPicker onDone={refresh} />
 }
 
-function RoomPicker({ me, onDone }) {
+function RoomPicker({ onDone }) {
   const [mode, setMode] = useState('join') // 'join' | 'create'
   const [code, setCode] = useState('')
   const [roomName, setRoomName] = useState('')
@@ -77,8 +77,6 @@ function RoomPicker({ me, onDone }) {
         STUDY ORBITAL
       </h1>
       <p className="mt-2 mb-8 text-center text-[14px] leading-relaxed text-orbit-dim">
-        {me.name} 함장님, 어느 항로에 오르시겠습니까?
-        <br />
         친구들과 같은 방에 있어야 같은 맵에서 경쟁합니다.
       </p>
 
@@ -137,7 +135,7 @@ function RoomPicker({ me, onDone }) {
           onClick={logout}
           className="mx-auto block pt-2 text-[12px] text-orbit-dim/60 underline-offset-2 hover:underline"
         >
-          로그아웃 ({me.name})
+          로그아웃
         </button>
       </div>
     </div>

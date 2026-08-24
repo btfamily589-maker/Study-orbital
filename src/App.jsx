@@ -60,7 +60,7 @@ function Main({ me, refresh }) {
           </div>
 
           <div className="text-center text-[13px] text-orbit-dim">
-            참가자 {me.room.memberCount}명{me.room.isOwner && ' · 내가 방장'}
+            참가자 {me.room.memberCount}명
           </div>
 
           <OrbitButton
@@ -83,7 +83,7 @@ function Main({ me, refresh }) {
             방 나가기
           </OrbitButton>
           <OrbitButton variant="danger" className="w-full" onClick={logout}>
-            로그아웃 ({me.name})
+            로그아웃
           </OrbitButton>
         </div>
       </Sheet>
