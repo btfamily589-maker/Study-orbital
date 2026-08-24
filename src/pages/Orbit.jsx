@@ -1454,6 +1454,8 @@ export default function Orbit() {
   const [saving, setSaving] = useState({ busy: false, error: null })
   /* 발사 연출. 켜지면 LAUNCH_MS 뒤에 스스로 꺼진다. */
   const [igniting, setIgniting] = useState(false)
+  /* 이번 세션이 발사 연출을 타고 시작됐는가 — 새로고침으로 복귀한 세션과 구분한다. */
+  const [justLaunched, setJustLaunched] = useState(false)
   /* uid → 프사(data URL). 함선 옆에 띄운다. 프사는 자주 안 바뀌니 20초 폴링에
    * 얹지 않고 들어올 때 한 번만 받는다. */
   const [photos, setPhotos] = useState({})
@@ -1571,6 +1573,7 @@ export default function Orbit() {
         onTakeover={async () => {
           setSaving({ busy: true, error: null })
           try {
+            setJustLaunched(false)
             setSession(await startSession(true))
             setSaving({ busy: false, error: null })
           } catch (e) {
@@ -1592,6 +1595,7 @@ export default function Orbit() {
     return (
       <>
         <StudySession
+          entering={justLaunched}
           session={session}
           ship={state.ship}
           fleet={state.fleet}
@@ -1669,6 +1673,7 @@ export default function Orbit() {
               try {
                 const s = await startSession()
                 setIgniting(true)
+                setJustLaunched(true)
                 setSession(s)
               } catch (e) {
                 /* 다른 기기가 이미 돌리고 있으면 에러로 끝내지 않는다. 그 세션을

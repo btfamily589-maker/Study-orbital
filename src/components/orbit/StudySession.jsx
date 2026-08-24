@@ -253,9 +253,19 @@ export function StudySession({
   finishing,
   busy,
   error,
+  /** 발사 연출을 타고 들어왔으면 true — 함선이 제자리에 앉은 뒤에야 계기를 켠다. */
+  entering = false,
 }) {
   const [now, setNow] = useState(Date.now())
   const [confirmCancel, setConfirmCancel] = useState(false)
+  /* 함선이 계기 자리에 앉기 전까지 계기는 꺼져 있다. 자리는 차지한다 —
+   * 그래야 함선이 정확히 제 자리로 날아든다. */
+  const [arrived, setArrived] = useState(!entering)
+  useEffect(() => {
+    if (arrived) return
+    const t = setTimeout(() => setArrived(true), 1100)
+    return () => clearTimeout(t)
+  }, [arrived])
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
@@ -424,64 +434,71 @@ export function StudySession({
         {/* 공부하는 동안에도 미사일은 날아온다. 맞으면 그때부터 느려지므로,
             방어막을 살지 지금 접을지 정하려면 여기서 보여야 한다 — 예전엔 맵으로
             나가야만 보였고, 나가면 타이머 화면을 떠나야 했다. */}
-        <div className="w-full">
-          <IncomingMissiles missiles={missiles} fleet={fleet} />
-        </div>
+        <motion.div
+          className="flex w-full flex-col items-center gap-7"
+          initial={false}
+          animate={{ opacity: arrived ? 1 : 0 }}
+          transition={{ duration: 0.45 }}
+        >
+          <div className="w-full">
+            <IncomingMissiles missiles={missiles} fleet={fleet} />
+          </div>
 
-        {/* 에너지가 다 찼다는 건 지금 화면에서 제일 중요한 소식이다 — 더 해봐야
+          {/* 에너지가 다 찼다는 건 지금 화면에서 제일 중요한 소식이다 — 더 해봐야
             안 쌓이므로 맨 위에서 알린다. */}
-        {energyFull && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-xs rounded-control border border-orbit-amber/40 bg-orbit-amber/10 p-3 text-center"
-          >
-            <div className="flex items-center justify-center gap-2">
-              <Zap className="h-4 w-4 text-orbit-amber" />
-              <span className="text-[15px] font-bold text-orbit-amber">에너지가 다 찼습니다</span>
+          {energyFull && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-xs rounded-control border border-orbit-amber/40 bg-orbit-amber/10 p-3 text-center"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Zap className="h-4 w-4 text-orbit-amber" />
+                <span className="text-[15px] font-bold text-orbit-amber">에너지가 다 찼습니다</span>
+              </div>
+              <p className="mt-1 text-[13px] text-orbit-dim">
+                {ship.maxEnergy}/{ship.maxEnergy}E — 더 모아도 저장되지 않습니다
+              </p>
+            </motion.div>
+          )}
+
+          <div className="text-center">
+            {/* 라벨은 뺐다. 큰 숫자가 00:42:31 모양이면 시계라는 건 보면 안다. */}
+            <div
+              className="code text-[46px] leading-none tracking-wider text-orbit-text"
+              style={{
+                textShadow: '0 0 30px rgba(0,212,255,0.5)',
+              }}
+            >
+              {fmtClock(seconds)}
             </div>
-            <p className="mt-1 text-[13px] text-orbit-dim">
-              {ship.maxEnergy}/{ship.maxEnergy}E — 더 모아도 저장되지 않습니다
-            </p>
-          </motion.div>
-        )}
-
-        <div className="text-center">
-          {/* 라벨은 뺐다. 큰 숫자가 00:42:31 모양이면 시계라는 건 보면 안다. */}
-          <div
-            className="code text-[46px] leading-none tracking-wider text-orbit-text"
-            style={{
-              textShadow: '0 0 30px rgba(0,212,255,0.5)',
-            }}
-          >
-            {fmtClock(seconds)}
           </div>
-        </div>
 
-        {/* 다섯 시간이 넘으면 이 세션은 통째로 버려진다. 넘고 나서 알려주면
+          {/* 다섯 시간이 넘으면 이 세션은 통째로 버려진다. 넘고 나서 알려주면
             통보라, 30분 전부터 띄운다. */}
-        {(nearingCap || overlong) && (
-          <div
-            className={`w-full max-w-xs rounded-control border px-3 py-2.5 text-center text-[13px] leading-relaxed ${
-              overlong
-                ? 'border-orbit-amber/40 bg-orbit-amber/10 text-orbit-amber'
-                : 'border-white/15 bg-white/5 text-orbit-dim'
-            }`}
-          >
-            {overlong ? (
-              <>
-                <b>{MAX_SESSION_MINUTES / 60}시간이 넘어 이 세션은 기록되지 않습니다.</b>
-                <br />
-                정지를 누르고 다시 시작해 주세요.
-              </>
-            ) : (
-              <>
-                {MAX_SESSION_MINUTES / 60}시간이 넘으면 이 세션은 기록되지 않습니다 (
-                <span className="num">{MAX_SESSION_MINUTES - minutes}분</span> 남음)
-              </>
-            )}
-          </div>
-        )}
+          {(nearingCap || overlong) && (
+            <div
+              className={`w-full max-w-xs rounded-control border px-3 py-2.5 text-center text-[13px] leading-relaxed ${
+                overlong
+                  ? 'border-orbit-amber/40 bg-orbit-amber/10 text-orbit-amber'
+                  : 'border-white/15 bg-white/5 text-orbit-dim'
+              }`}
+            >
+              {overlong ? (
+                <>
+                  <b>{MAX_SESSION_MINUTES / 60}시간이 넘어 이 세션은 기록되지 않습니다.</b>
+                  <br />
+                  정지를 누르고 다시 시작해 주세요.
+                </>
+              ) : (
+                <>
+                  {MAX_SESSION_MINUTES / 60}시간이 넘으면 이 세션은 기록되지 않습니다 (
+                  <span className="num">{MAX_SESSION_MINUTES - minutes}분</span> 남음)
+                </>
+              )}
+            </div>
+          )}
+        </motion.div>
 
         <motion.div
           layoutId="my-ship-transit"
@@ -496,39 +513,46 @@ export function StudySession({
           />
         </motion.div>
 
-        {/* 앞뒤 사람과의 격차 */}
-        {(neighbours.ahead || neighbours.behind) && (
-          <div className="flex w-full max-w-xs items-center justify-between text-[14px]">
-            {neighbours.ahead ? (
-              <div className="flex items-center gap-1.5">
-                <span className="text-orbit-dim">▲</span>
-                <span className="font-bold text-orbit-text">{neighbours.ahead.nickname}</span>
-                <span className="num font-bold text-orbit-cyan">+{neighbours.ahead.gap}</span>
-              </div>
-            ) : (
-              <div />
-            )}
-            {neighbours.behind ? (
-              <div className="flex items-center gap-1.5">
-                <span className="num font-bold text-orbit-amber">−{neighbours.behind.gap}</span>
-                <span className="font-bold text-orbit-text">{neighbours.behind.nickname}</span>
-                <span className="text-orbit-dim">▼</span>
-              </div>
-            ) : (
-              <div />
-            )}
-          </div>
-        )}
+        <motion.div
+          className="flex w-full flex-col items-center gap-7"
+          initial={false}
+          animate={{ opacity: arrived ? 1 : 0 }}
+          transition={{ duration: 0.45 }}
+        >
+          {/* 앞뒤 사람과의 격차 */}
+          {(neighbours.ahead || neighbours.behind) && (
+            <div className="flex w-full max-w-xs items-center justify-between text-[14px]">
+              {neighbours.ahead ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-orbit-dim">▲</span>
+                  <span className="font-bold text-orbit-text">{neighbours.ahead.nickname}</span>
+                  <span className="num font-bold text-orbit-cyan">+{neighbours.ahead.gap}</span>
+                </div>
+              ) : (
+                <div />
+              )}
+              {neighbours.behind ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="num font-bold text-orbit-amber">−{neighbours.behind.gap}</span>
+                  <span className="font-bold text-orbit-text">{neighbours.behind.nickname}</span>
+                  <span className="text-orbit-dim">▼</span>
+                </div>
+              ) : (
+                <div />
+              )}
+            </div>
+          )}
 
-        <StatusPanel
-          energy={energy}
-          speed={speed}
-          shields={shields}
-          gainedEnergy={gainedEnergy}
-          gainedDistance={gainedDistance}
-        />
+          <StatusPanel
+            energy={energy}
+            speed={speed}
+            shields={shields}
+            gainedEnergy={gainedEnergy}
+            gainedDistance={gainedDistance}
+          />
 
-        <SlideToStop onStop={onStop} />
+          <SlideToStop onStop={onStop} />
+        </motion.div>
       </div>
     </div>
   )
