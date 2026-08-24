@@ -55,7 +55,8 @@ function Main({ me, refresh }) {
       <Starfield />
       {/* 상단 바 — 서비스 이름과 지금 방. 방 이름을 누르면 초대코드가 뜬다. */}
       <header className="relative z-10 flex items-center justify-between gap-3 px-5 pt-4 pb-2">
-        <div className="neon text-[18px] leading-none font-bold tracking-widest text-orbit-cyan">
+        {/* 서비스 이름은 절대 줄바꿈되지 않는다 — 방 이름 칩이 대신 줄어든다. */}
+        <div className="neon shrink-0 text-[18px] leading-none font-bold tracking-widest whitespace-nowrap text-orbit-cyan">
           STUDY ORBITAL
         </div>
         {/* 현재 방 이름+설정 | ⇄ 방 전환. 이름을 누르면 방 정보, 오른쪽은 내 방 목록. */}
