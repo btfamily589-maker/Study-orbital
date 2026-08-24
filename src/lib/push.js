@@ -97,23 +97,29 @@ export async function enablePush() {
   return token
 }
 
-/* 토큰은 브라우저가 알아서 갱신하기도 하고, 다른 계정으로 로그인했을 수도 있다.
- * 이미 허락된 기기는 앱이 뜰 때마다 지금 토큰을 지금 계정으로 다시 적어둔다 —
- * getToken은 이미 있으면 같은 값을 그대로 준다. */
-export async function syncPushToken() {
+/* 알림을 기본으로 켠다. 버튼을 찾아 눌러야만 등록되는 게 아니라, 앱이 뜨면
+ * 권한을 묻고(이미 허락돼 있으면 창 없이 통과) 조용히 등록한다.
+ * 토큰은 브라우저가 알아서 갈아끼우기도 하므로, 이미 등록된 기기도 앱이 뜰
+ * 때마다 지금 토큰을 지금 계정으로 다시 적어둔다 — getToken은 이미 있으면
+ * 같은 값을 그대로 준다. 거절했거나(iOS 사파리 탭처럼) 지원이 안 되면
+ * 아무것도 안 한다. */
+export async function ensurePushRegistered() {
   if (missingConfig()) return
-  if (!('Notification' in window) || Notification.permission !== 'granted') return
+  if (!('Notification' in window)) return
   if (!(await isSupported())) return
+  if (Notification.permission === 'denied') return
   try {
-    const reg = await navigator.serviceWorker.getRegistration()
-    if (!reg) return
+    const perm = await Notification.requestPermission()
+    if (perm !== 'granted') return
+    const reg = await registerSw()
     const token = await getToken(getMessaging(app), {
       vapidKey: VAPID,
       serviceWorkerRegistration: reg,
     })
     if (token) await registerPushToken(token)
+    await listenForegroundMessages()
   } catch (e) {
     // 알림 등록은 부가 기능이다. 실패해도 앱은 그대로 써야 한다.
-    console.warn('[push] 토큰 갱신 실패', e)
+    console.warn('[push] 자동 등록 실패', e)
   }
 }

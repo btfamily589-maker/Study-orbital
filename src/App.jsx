@@ -7,7 +7,12 @@ import { Starfield } from './components/orbit/Starfield'
 import { OrbitButton } from './components/OrbitButton'
 import { Sheet } from './components/ui'
 import { createRoom, joinRoom, leaveRoom, setMyPhoto, switchRoom } from './lib/rooms'
-import { enablePush, isPushRegistered, listenForegroundMessages, syncPushToken } from './lib/push'
+import {
+  enablePush,
+  ensurePushRegistered,
+  isPushRegistered,
+  listenForegroundMessages,
+} from './lib/push'
 import { compressProfilePhoto } from './lib/photo'
 import { logout } from './lib/firebase'
 
@@ -30,14 +35,16 @@ export default function App() {
 function Main({ me, refresh }) {
   const [roomOpen, setRoomOpen] = useState(false)
 
-  /* 탭을 보고 있는 동안 오는 푸시도 받아 띄우고, 이미 허락된 기기는 토큰을
-   * 지금 계정으로 다시 적어둔다(브라우저가 토큰을 갈아끼우는 일이 있다). */
+  /* 알림은 기본으로 켠다 — 앱이 뜨고 잠깐 뒤 권한을 묻고 조용히 등록한다.
+   * (이미 허락된 기기는 창 없이 토큰만 갱신된다.) */
   useEffect(() => {
     listenForegroundMessages()
-    syncPushToken()
+    const t = setTimeout(() => ensurePushRegistered(), 3000)
+    return () => clearTimeout(t)
   }, [])
   const [adminOpen, setAdminOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [switchOpen, setSwitchOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
   return (
@@ -49,13 +56,23 @@ function Main({ me, refresh }) {
         <div className="neon text-[18px] leading-none font-bold tracking-widest text-orbit-cyan">
           STUDY ORBITAL
         </div>
-        <button
-          onClick={() => setRoomOpen(true)}
-          className="flex min-w-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[13px] font-semibold text-orbit-text"
-        >
-          <span className="max-w-[9rem] truncate">{me.room.name}</span>
-          <span className="code shrink-0 text-[11px] text-orbit-dim">{me.room.memberCount}명</span>
-        </button>
+        {/* 현재 방 이름 | 방 전환. 이름을 누르면 방 정보, ⇄를 누르면 내 방 목록. */}
+        <div className="flex min-w-0 items-center overflow-hidden rounded-full border border-white/15 bg-white/5">
+          <button
+            onClick={() => setRoomOpen(true)}
+            className="min-w-0 py-1.5 pr-2.5 pl-3 text-[13px] font-semibold text-orbit-text"
+          >
+            <span className="block max-w-[7.5rem] truncate">{me.room.name}</span>
+          </button>
+          <span className="h-4 w-px shrink-0 bg-white/20" />
+          <button
+            onClick={() => setSwitchOpen(true)}
+            aria-label="방 전환"
+            className="py-1.5 pr-3 pl-2.5 text-[14px] font-bold text-orbit-cyan"
+          >
+            ⇄
+          </button>
+        </div>
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-xl flex-1 px-4 pb-10">
@@ -79,18 +96,6 @@ function Main({ me, refresh }) {
           <PhotoRow me={me} refresh={refresh} />
 
           <PushRow />
-
-          <MyRooms
-            me={me}
-            onSwitched={async () => {
-              setRoomOpen(false)
-              await refresh()
-            }}
-            onAdd={() => {
-              setRoomOpen(false)
-              setAddOpen(true)
-            }}
-          />
 
           {me.room.isOwner && (
             <OrbitButton
@@ -132,6 +137,20 @@ function Main({ me, refresh }) {
 
       <Sheet dark full open={adminOpen} onClose={() => setAdminOpen(false)} title="방장 설정">
         {adminOpen && <OrbitAdmin />}
+      </Sheet>
+
+      <Sheet dark center open={switchOpen} onClose={() => setSwitchOpen(false)} title="방 전환">
+        <MyRooms
+          me={me}
+          onSwitched={async () => {
+            setSwitchOpen(false)
+            await refresh()
+          }}
+          onAdd={() => {
+            setSwitchOpen(false)
+            setAddOpen(true)
+          }}
+        />
       </Sheet>
 
       <Sheet dark center open={addOpen} onClose={() => setAddOpen(false)} title="방 추가">
