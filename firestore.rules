@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    /* Study Orbital은 클라이언트가 Firestore를 직접 읽고 쓰지 않는다 —
+     * 전부 서버(Admin SDK)를 거친다. 그래서 전부 잠근다. */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

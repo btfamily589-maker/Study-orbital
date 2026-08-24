@@ -1,0 +1,262 @@
+/* Orbit 탭 전용 서체. 나머지 화면은 Pretendard 그대로 쓴다. */
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  /* 조용한 중성 배경 위에 흰 카드를 얹고, 강조는 파랑 하나로만 준다.
+   * 선을 긋는 대신 여백과 아주 옅은 그림자로 경계를 만든다. */
+  --color-paper: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-ink: #14161a;
+  --color-muted: #6b7280;
+  --color-faint: #9aa1ac;
+  --color-line: #ebedf0;
+  --color-mark: #4c6ef5;
+  --color-mark-soft: #eef1fe;
+  --color-red: #e5484d;
+  --color-red-soft: #fdf0f0;
+  --color-night: #12141a;
+
+  /* 일정·할일 색 인덱스. 파랑(mark)·빨강(red)은 고정 일정·시험 전용이라 여기엔 안 넣는다. */
+  --color-gray: #868e96;
+  --color-green: #2f9e44;
+  --color-purple: #7c4fe0;
+  --color-orange: #e8590c;
+  --color-teal: #0c8599;
+  --color-pink: #d6336c;
+
+  --radius-card: 18px;
+  --radius-control: 12px;
+
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+  --shadow-lift: 0 8px 32px rgba(16, 24, 40, 0.12);
+
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', 'Roboto Mono', Menlo, monospace;
+
+  /* ── Study Orbital 전용 팔레트 ──────────────────────────────────
+   * Orbit 탭은 나머지 화면과 정반대다: 어두운 우주 배경에 네온 청록·호박색.
+   * Sevenly의 밝은 테마를 덮어쓰면 안 되므로 이름에 orbit-을 붙여 따로 둔다.
+   * 원본 값을 기준으로 하되, 흐린 계열은 거의 흰색까지 올렸다. 원본은 데스크톱
+   * 기준이었는데 여기선 폰으로 본다 — 어두운 배경 위 작은 회색 글씨는 실제로
+   * 안 읽힌다. dim은 이제 "조금 눌러둔 흰색"이지 회색이 아니다. */
+  --color-orbit-bg: hsl(222 47% 4%);
+  --color-orbit-panel: hsl(222 47% 8%);
+  --color-orbit-line: hsl(217 32% 17%);
+  --color-orbit-text: hsl(210 40% 98%);
+  --color-orbit-dim: hsl(210 30% 93%);
+  --color-orbit-cyan: hsl(190 100% 55%);
+  --color-orbit-amber: hsl(28 100% 58%);
+  --color-orbit-red: hsl(0 100% 60%);
+  --color-orbit-green: hsl(142 70% 45%);
+
+  --font-orbit: 'Chakra Petch', 'Pretendard Variable', sans-serif;
+  --font-orbit-display: 'Rajdhani', 'Chakra Petch', sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* 위에서 아래로 쓸어내리면 브라우저가 새로고침을 걸어, 공부 타이머가 돌던
+ * 화면이나 쓰던 글이 통째로 날아갔다.
+ *
+ * 이 속성은 스크롤을 실제로 맡은 요소에 걸려야 한다. body에만 걸면 브라우저가
+ * 뷰포트까지 올려주지 않아서(overflow와 달리 전파되지 않는다) 아무 일도 안
+ * 일어난다 — 그동안 body에만 있어서 안 먹었다.
+ *
+ * contain이라 안쪽 스크롤 상자(맵·목록)는 평소대로 움직이고, 그 끝에서 바깥으로
+ * 넘어가는 것만 막는다. */
+html {
+  overscroll-behavior-y: contain;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: contain;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: 16px; /* iOS 자동 확대 방지 */
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-mark);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 종 울림: 다음 교시 임박할 때 타임라인 커서 */
+@keyframes pulse-cursor {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+.cursor-pulse {
+  animation: pulse-cursor 1.8s ease-in-out infinite;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Study Orbital 전용 스타일 ─────────────────────────────────────
+ * 전부 .orbit 안에서만 먹는다. 이 탭만 어두운 콕핏 화면이고 나머지는 그대로다.
+ * 원본 Study Orbital의 유틸리티(glass-panel, neon-text, scanline)를 옮겼다. */
+.orbit {
+  background-color: var(--color-orbit-bg);
+  color: var(--color-orbit-text);
+  font-family: var(--font-orbit);
+  /* 위아래에서 은은하게 번지는 빛. 평평한 검정을 피한다. */
+  background-image:
+    radial-gradient(circle at 50% 0%, hsl(190 100% 50% / 0.06), transparent 55%),
+    radial-gradient(circle at 50% 100%, hsl(24 100% 50% / 0.05), transparent 55%);
+}
+
+/* 앱 컨테이너만 어둡게 하면 화면 끝을 넘겨 당겼을 때 그 밑의 body 종이색이
+ * 드러난다. Orbit 탭에 있는 동안은 body도 같이 어둡게 한다(App.jsx에서 토글). */
+body.orbit-bg {
+  background: var(--color-orbit-bg);
+  color-scheme: dark;
+}
+
+.orbit h1,
+.orbit h2,
+.orbit h3 {
+  font-family: var(--font-orbit-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* 반투명 유리 패널. 배경이 비쳐 보여서 깊이가 생긴다. */
+.orbit .panel {
+  background: hsl(222 47% 8% / 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(0 0% 100% / 0.08);
+  border-radius: var(--radius-card);
+}
+
+.orbit .panel-cyan {
+  border-color: hsl(190 100% 50% / 0.3);
+  box-shadow: 0 0 15px hsl(190 100% 50% / 0.1);
+}
+
+.orbit .panel-red {
+  border-color: hsl(0 100% 60% / 0.3);
+  box-shadow: 0 0 15px hsl(0 100% 60% / 0.1);
+}
+
+/* 섹션 라벨. 원본은 9~10px 대문자였는데 한글이 섞이면 그 크기로는 못 읽는다.
+ * 크기를 올리고, 대문자 자간은 로마자에만 의미가 있으므로 약하게만 준다. */
+.orbit .label {
+  /* 섹션 이름(무기 선택·방어막·공격 대상 선택…). 15px도 아래 카드의 이름들
+     (15px)과 같은 크기라 머리글이 아니라 같은 급으로 보였다. 한 단 위로 올린다. */
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-orbit-text);
+}
+
+/* 네온 글자. 색은 currentColor를 따라간다. */
+.orbit .neon {
+  text-shadow: 0 0 10px currentColor;
+}
+
+/* CRT 주사선. 실제로 화면을 가리면 안 되니 아주 옅게. */
+.orbit .scanline {
+  position: relative;
+  overflow: hidden;
+}
+.orbit .scanline::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  opacity: 0.25;
+  z-index: 2;
+}
+
+@keyframes orbit-flicker {
+  0%,
+  25%,
+  30%,
+  35%,
+  100% {
+    opacity: 1;
+  }
+  5% {
+    opacity: 0.8;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  20% {
+    opacity: 0.5;
+  }
+}
+.orbit .flicker {
+  animation: orbit-flicker 3s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 99px;
+}
