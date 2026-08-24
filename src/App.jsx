@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Settings } from 'lucide-react'
+import { Bell, BellOff, Settings } from 'lucide-react'
 import AuthGate from './components/AuthGate'
 import RoomGate from './components/RoomGate'
 import Orbit from './pages/Orbit'
@@ -344,7 +344,6 @@ function PhotoRow({ me, refresh }) {
       )}
       <div className="min-w-0 flex-1">
         <div className="text-[14px] font-semibold">프사</div>
-        <div className="text-[12px] text-orbit-dim">함선 옆에 뜹니다</div>
         {err && <div className="mt-0.5 text-[12px] text-orbit-red">{err}</div>}
       </div>
       <label className="shrink-0 cursor-pointer rounded-lg bg-orbit-cyan/15 px-3 py-2 text-[13px] font-bold text-orbit-cyan">
@@ -391,16 +390,27 @@ function PushRow() {
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-white/12 bg-white/5 p-3">
-      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10 text-[20px]">
-        {on ? '🔔' : '🔕'}
+      {/* 네온 종. 꺼진 상태는 빗금 친 종에 빛을 죽여 같은 결로 보여준다. */}
+      <div
+        className={`grid h-12 w-12 shrink-0 place-items-center rounded-full border ${
+          on ? 'border-orbit-cyan/45 bg-orbit-cyan/10' : 'border-orbit-cyan/20 bg-orbit-cyan/5'
+        }`}
+        style={{ boxShadow: on ? '0 0 14px rgba(0,212,255,0.28)' : 'none' }}
+      >
+        {on ? (
+          <Bell
+            className="h-5 w-5 text-orbit-cyan"
+            style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,255,0.95))' }}
+          />
+        ) : (
+          <BellOff
+            className="h-5 w-5 text-orbit-cyan/55"
+            style={{ filter: 'drop-shadow(0 0 4px rgba(0,212,255,0.45))' }}
+          />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-[14px] font-semibold">미사일 알림</div>
-        <div className="text-[12px] leading-relaxed text-orbit-dim">
-          {on
-            ? '이 기기로 발사·착탄 알림이 옵니다'
-            : '알림 권한을 허용하면 자동으로 켜집니다. iPhone은 홈 화면에 추가한 앱에서 열어 주세요.'}
-        </div>
       </div>
     </div>
   )
