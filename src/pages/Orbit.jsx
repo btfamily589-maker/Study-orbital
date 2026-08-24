@@ -192,15 +192,6 @@ function LaunchOverlay() {
           </motion.div>
         </motion.div>
       </div>
-
-      <motion.p
-        className="neon absolute inset-x-0 bottom-[21%] text-center text-[15px] font-bold tracking-[0.35em] text-orbit-cyan"
-        initial={{ opacity: 0, letterSpacing: '0.2em' }}
-        animate={{ opacity: [0, 1, 1], letterSpacing: '0.35em' }}
-        transition={{ duration: 1.1 }}
-      >
-        엔진 점화
-      </motion.p>
     </motion.div>
   )
 }
