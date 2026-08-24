@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
 import { CheckCircle, Crosshair, Navigation, Shield, Square, Target, Zap } from 'lucide-react'
 import { Spaceship } from './Spaceship'
 import { IncomingMissiles } from './RouteMap'
@@ -29,6 +29,62 @@ import {
  */
 
 /** 안정성 1포인트를 올리는 데 드는 에너지. 서버 engine.js와 같은 값. */
+
+/* 밀어서 정지. 누르는 버튼이었을 땐 주머니 속에서 눌리거나 손이 스쳐 세션이
+ * 끊기는 일이 있었다 — 손잡이를 오른쪽 끝까지 밀어야 선다. */
+const STOP_KNOB = 48
+
+function SlideToStop({ onStop }) {
+  const trackRef = useRef(null)
+  const [max, setMax] = useState(0)
+  const x = useMotionValue(0)
+  // 미는 만큼 안내 문구는 사라지고, 지나온 자리엔 물이 차오른다.
+  const hintOpacity = useTransform(x, [0, Math.max(1, max * 0.55)], [1, 0])
+  const fillWidth = useTransform(x, (v) => v + STOP_KNOB + 8)
+
+  useEffect(() => {
+    const el = trackRef.current
+    if (!el) return
+    const measure = () => setMax(el.clientWidth - STOP_KNOB - 8)
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+
+  return (
+    <div
+      ref={trackRef}
+      className="relative h-14 w-full max-w-xs overflow-hidden rounded-full border border-orbit-cyan/40 bg-orbit-cyan/10"
+      style={{ boxShadow: '0 0 30px rgba(0,212,255,0.18)' }}
+    >
+      <motion.div
+        className="absolute inset-y-0 left-0 rounded-full bg-orbit-cyan/20"
+        style={{ width: fillWidth }}
+      />
+      <motion.span
+        className="pointer-events-none absolute inset-0 flex items-center justify-center text-[14px] font-bold tracking-widest text-orbit-cyan"
+        style={{ opacity: hintOpacity }}
+      >
+        밀어서 정지 ›››
+      </motion.span>
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: 0, right: Math.max(0, max) }}
+        dragElastic={0.02}
+        dragMomentum={false}
+        dragSnapToOrigin
+        style={{ x }}
+        onDragEnd={() => {
+          if (max > 0 && x.get() >= max * 0.85) onStop()
+        }}
+        className="absolute top-1 left-1 grid h-12 w-12 cursor-grab place-items-center rounded-full bg-orbit-cyan text-orbit-bg active:cursor-grabbing"
+        whileTap={{ scale: 1.05 }}
+      >
+        <Square className="h-5 w-5 fill-current" />
+      </motion.div>
+    </div>
+  )
+}
 
 const fmtClock = (sec) => {
   const p = (n) => String(n).padStart(2, '0')
@@ -472,16 +528,7 @@ export function StudySession({
           gainedDistance={gainedDistance}
         />
 
-        {/* 정지 버튼. 원본처럼 크고 둥글게 — 달리는 중엔 이거 하나만 누른다. */}
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={onStop}
-          className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-full border-2 border-orbit-red bg-orbit-red/10 text-orbit-red"
-          style={{ boxShadow: '0 0 40px rgba(255,0,0,0.3)' }}
-        >
-          <Square className="h-8 w-8 fill-current" />
-          <span className="text-[13px] font-bold tracking-wider">정지</span>
-        </motion.button>
+        <SlideToStop onStop={onStop} />
       </div>
     </div>
   )
