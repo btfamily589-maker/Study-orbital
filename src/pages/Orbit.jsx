@@ -1730,35 +1730,29 @@ export default function Orbit() {
           </Fading>
 
           {view === 'hud' && (
-            /* 폰에서는 한 줄, 태블릿·데스크톱(lg)에서는 두 기둥 — 화면을 놀리지
-               않는다. 왼쪽은 함선과 시동, 오른쪽은 수치와 오늘의 공부. */
-            <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
-              <div className="space-y-4">
-                {/* 함선은 연출 내내 보인다 — 숫자만 빠진다. */}
-                <ShipHero ship={state.ship} isStudying={false} dim={dim} />
-                <Fading dim={dim} delay={0.12} className="space-y-4">
-                  {/* 날아오는 게 있으면 함선 상태 바로 다음에 알린다 — 방어막을 살지
-                  말지가 여기서 갈린다. 없으면 아무것도 안 그린다. */}
-                  <IncomingMissiles missiles={state.missiles} fleet={state.fleet} />
-                  <EngineStart
-                    noFlyZone={state.status.noFlyZone}
-                    onStart={async () => {
-                      setFinishing(false)
-                      try {
-                        const s = await startSession()
-                        setSession(s)
-                        setTransit({ dir: 'launch', phase: 'out' })
-                      } catch (e) {
-                        /* 다른 기기가 이미 돌리고 있으면 에러로 끝내지 않는다. 그 세션을
-                         * 보여주고 이어받을지 물어본다. */
-                        if (!e.otherDevice) throw e
-                        setSession({ sessionId: null, startedAt: e.startedAt, mine: false })
-                      }
-                    }}
-                  />
-                </Fading>
-              </div>
-              <Fading dim={dim} delay={0.2} className="space-y-4">
+            <div className="space-y-4">
+              {/* 함선은 연출 내내 보인다 — 숫자만 빠진다. */}
+              <ShipHero ship={state.ship} isStudying={false} dim={dim} />
+              <Fading dim={dim} delay={0.12} className="space-y-4">
+                {/* 날아오는 게 있으면 함선 상태 바로 다음에 알린다 — 방어막을 살지
+                말지가 여기서 갈린다. 없으면 아무것도 안 그린다. */}
+                <IncomingMissiles missiles={state.missiles} fleet={state.fleet} />
+                <EngineStart
+                  noFlyZone={state.status.noFlyZone}
+                  onStart={async () => {
+                    setFinishing(false)
+                    try {
+                      const s = await startSession()
+                      setSession(s)
+                      setTransit({ dir: 'launch', phase: 'out' })
+                    } catch (e) {
+                      /* 다른 기기가 이미 돌리고 있으면 에러로 끝내지 않는다. 그 세션을
+                       * 보여주고 이어받을지 물어본다. */
+                      if (!e.otherDevice) throw e
+                      setSession({ sessionId: null, startedAt: e.startedAt, mine: false })
+                    }
+                  }}
+                />
                 <ShipStats ship={state.ship} />
                 <TodayStudy rows={state.ranking} fleet={state.fleet} />
               </Fading>
@@ -1766,27 +1760,19 @@ export default function Orbit() {
           )}
 
           {view === 'map' && (
-            <div className="lg:mx-auto lg:max-w-2xl">
-              <RouteMap fleet={state.fleet} missiles={state.missiles} photos={photos} />
-            </div>
+            <RouteMap fleet={state.fleet} missiles={state.missiles} photos={photos} />
           )}
 
           {view === 'combat' && (
-            <div className="lg:mx-auto lg:max-w-2xl">
-              <Combat
-                ship={state.ship}
-                fleet={state.fleet}
-                missiles={state.missiles}
-                onChanged={load}
-              />
-            </div>
+            <Combat
+              ship={state.ship}
+              fleet={state.fleet}
+              missiles={state.missiles}
+              onChanged={load}
+            />
           )}
 
-          {view === 'time' && (
-            <div className="lg:mx-auto lg:max-w-2xl">
-              <StudyTime rows={state.ranking} onChanged={load} />
-            </div>
-          )}
+          {view === 'time' && <StudyTime rows={state.ranking} onChanged={load} />}
         </div>
       )}
     </>

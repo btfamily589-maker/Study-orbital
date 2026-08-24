@@ -68,7 +68,7 @@ function Main({ me, refresh }) {
         </button>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-xl flex-1 px-4 pb-28 lg:max-w-5xl lg:px-8">
+      <main className="relative z-10 mx-auto w-full max-w-xl flex-1 px-4 pb-28">
         {/* 방을 바꾸면 다른 항로다 — key로 통째로 새로 띄운다. */}
         <Orbit key={me.room.id} />
       </main>
