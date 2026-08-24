@@ -83,7 +83,6 @@ const sheetInput =
 
 /* ---------------- 공용 조각 ---------------- */
 
-
 function Meter({ label, value, max = 100, color = 'cyan', suffix = '%' }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100))
   const bar = {
@@ -1408,7 +1407,20 @@ export default function Orbit() {
       if (seq.current !== my) return
 
       if (!boot.status.joined) {
-        setState({ phase: 'join', status: boot.status })
+        /* 방에 들어온 사람은 곧 참가자다 — "사용해보기" 단추를 또 누르게
+         * 하지 않고 그 자리에서 배를 받아 다시 읽는다. */
+        await joinOrbit()
+        const again = await bootOrbit(today)
+        if (seq.current !== my) return
+        setSession(again.session?.sessionId ? again.session : null)
+        setState({
+          phase: 'in',
+          status: again.status,
+          ship: again.ship,
+          fleet: again.fleet,
+          ranking: again.ranking,
+          missiles: again.missiles,
+        })
         return
       }
       setSession(boot.session?.sessionId ? boot.session : null)

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import AuthGate from './components/AuthGate'
 import RoomGate from './components/RoomGate'
 import Orbit from './pages/Orbit'
+import OrbitAdmin from './components/OrbitAdmin'
 import { OrbitButton } from './components/OrbitButton'
 import { Sheet } from './components/ui'
 import { leaveRoom } from './lib/rooms'
@@ -25,6 +26,7 @@ export default function App() {
 
 function Main({ me, refresh }) {
   const [roomOpen, setRoomOpen] = useState(false)
+  const [adminOpen, setAdminOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
   return (
@@ -60,6 +62,17 @@ function Main({ me, refresh }) {
             참가자 {me.room.memberCount}명
           </div>
 
+          {me.room.isOwner && (
+            <OrbitButton
+              className="w-full"
+              onClick={() => {
+                setRoomOpen(false)
+                setAdminOpen(true)
+              }}
+            >
+              방장 설정
+            </OrbitButton>
+          )}
           <OrbitButton
             variant="ghost"
             className="w-full"
@@ -83,6 +96,10 @@ function Main({ me, refresh }) {
             로그아웃
           </OrbitButton>
         </div>
+      </Sheet>
+
+      <Sheet dark full open={adminOpen} onClose={() => setAdminOpen(false)} title="방장 설정">
+        {adminOpen && <OrbitAdmin />}
       </Sheet>
     </>
   )

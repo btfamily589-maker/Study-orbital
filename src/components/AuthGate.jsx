@@ -117,12 +117,6 @@ export default function AuthGate({ children }) {
         <OrbitButton className="w-full" disabled={busy} onClick={submit}>
           {busy ? '들어가는 중…' : mode === 'signup' ? '가입하고 시작하기' : '로그인'}
         </OrbitButton>
-
-        {mode === 'signup' && (
-          <p className="text-center text-[12px] leading-relaxed text-orbit-dim/70">
-            이름은 서비스 전체에서 하나뿐입니다 — 로그인할 때도 이 이름을 씁니다.
-          </p>
-        )}
       </div>
     </div>
   )
