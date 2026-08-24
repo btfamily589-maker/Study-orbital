@@ -222,10 +222,6 @@ export function StudySession({
   finishing,
   busy,
   error,
-  /** 발사 연출을 타고 들어왔으면 true — 함선이 제자리에 앉은 뒤에야 계기를 켠다. */
-  entering = false,
-  /** 기록을 마치고 홈으로 돌아가는 중 — 계기가 빠지고 함선은 오버레이가 데려간다. */
-  leaving = false,
 }) {
   const [now, setNow] = useState(Date.now())
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -235,15 +231,6 @@ export function StudySession({
   useEffect(() => {
     setPausedAt(finishing ? Date.now() : null)
   }, [finishing])
-  /* 함선이 계기 자리에 앉기 전까지 계기는 꺼져 있다. 자리는 차지한다 —
-   * 그래야 함선이 정확히 제 자리로 날아든다. */
-  const [arrived, setArrived] = useState(!entering)
-  useEffect(() => {
-    if (arrived) return
-    const t = setTimeout(() => setArrived(true), 1100)
-    return () => clearTimeout(t)
-  }, [arrived])
-
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(t)
@@ -314,12 +301,7 @@ export function StudySession({
         {/* 공부하는 동안에도 미사일은 날아온다. 맞으면 그때부터 느려지므로,
             방어막을 살지 지금 접을지 정하려면 여기서 보여야 한다 — 예전엔 맵으로
             나가야만 보였고, 나가면 타이머 화면을 떠나야 했다. */}
-        <motion.div
-          className="flex w-full flex-col items-center gap-7"
-          initial={false}
-          animate={{ opacity: arrived ? 1 : 0 }}
-          transition={{ duration: 0.45 }}
-        >
+        <div className="flex w-full flex-col items-center gap-7">
           <div className="w-full">
             <IncomingMissiles missiles={missiles} fleet={fleet} />
           </div>
@@ -378,31 +360,17 @@ export function StudySession({
               )}
             </div>
           )}
-        </motion.div>
+        </div>
 
-        {leaving ? (
-          <div style={{ height: 140 }} />
-        ) : (
-          <motion.div
-            layoutId="my-ship-transit"
-            transition={{ layout: { type: 'tween', duration: 1.05, ease: [0.3, 0, 0.2, 1] } }}
-          >
-            <Spaceship
-              status={statusOf(energy)}
-              isStudying={energy > 0 && !finishing}
-              shields={shields}
-              energy={energy}
-              size={140}
-            />
-          </motion.div>
-        )}
+        <Spaceship
+          status={statusOf(energy)}
+          isStudying={energy > 0 && !finishing}
+          shields={shields}
+          energy={energy}
+          size={140}
+        />
 
-        <motion.div
-          className="flex w-full flex-col items-center gap-7"
-          initial={false}
-          animate={{ opacity: arrived ? 1 : 0 }}
-          transition={{ duration: 0.45 }}
-        >
+        <div className="flex w-full flex-col items-center gap-7">
           {/* 앞뒤 사람과의 격차 */}
           {(neighbours.ahead || neighbours.behind) && (
             <div className="flex w-full max-w-xs items-center justify-between text-[14px]">
@@ -468,7 +436,7 @@ export function StudySession({
           ) : (
             <SlideToStop onStop={onStop} />
           )}
-        </motion.div>
+        </div>
 
         <AnimatePresence>
           {confirmCancel && (
