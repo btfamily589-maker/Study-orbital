@@ -173,57 +173,99 @@ function Main({ me, refresh }) {
   )
 }
 
-/* 내 방 목록 — 여러 방을 오간다. 지금 방은 표시만 하고, 다른 방은 누르면
- * 그 항로로 옮겨 탄다. 배·기록은 방마다 따로 산다. */
+/* 내 방 목록 — 여러 방(항로)을 오간다. 방마다 이름에서 뽑은 색의 행성을 달아
+ * 한눈에 구분되게 한다. 지금 방은 네온으로 밝히고, 다른 방은 줄 전체가 버튼이다. */
+function roomHue(name) {
+  let h = 0
+  for (const ch of name) h = (h * 31 + ch.codePointAt(0)) % 360
+  return h
+}
+
+function RoomPlanet({ name, lit }) {
+  const hue = roomHue(name)
+  return (
+    <span
+      className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full"
+      style={{
+        background: `radial-gradient(circle at 32% 30%, hsl(${hue} 85% 66%), hsl(${hue} 70% 38%) 58%, hsl(${hue} 60% 20%))`,
+        boxShadow: lit
+          ? `0 0 16px hsl(${hue} 90% 60% / 0.55), inset -4px -5px 10px rgb(0 0 0 / 0.45)`
+          : 'inset -4px -5px 10px rgb(0 0 0 / 0.45)',
+      }}
+    >
+      {/* 행성 고리 */}
+      <span
+        className="absolute h-4 w-[52px] rounded-full border"
+        style={{ borderColor: `hsl(${hue} 80% 75% / 0.55)`, transform: 'rotate(-18deg)' }}
+      />
+      <span className="text-[16px] font-bold text-white/90">{name.slice(0, 1)}</span>
+    </span>
+  )
+}
+
 function MyRooms({ me, onSwitched, onAdd }) {
   const [busy, setBusy] = useState(null)
   const [err, setErr] = useState(null)
   const others = (me.rooms ?? []).filter((r) => r.id !== me.room.id)
 
   return (
-    <div className="rounded-xl border border-white/12 bg-white/5 p-3">
-      <div className="flex items-baseline justify-between px-1">
-        <span className="text-[14px] font-semibold">내 방</span>
-        <button onClick={onAdd} className="text-[13px] font-bold text-orbit-cyan">
-          + 방 추가
-        </button>
-      </div>
-      {err && <p className="mt-1 px-1 text-[12px] text-orbit-red">{err}</p>}
-      <div className="mt-1 divide-y divide-white/10">
-        <div className="flex items-center gap-2 py-2.5">
-          <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
-            {me.room.name}
-            {me.room.isOwner && <span className="ml-1.5 text-[11px] text-orbit-cyan">방장</span>}
-          </span>
-          <span className="shrink-0 text-[12px] text-orbit-dim">지금 방</span>
-        </div>
-        {others.map((r) => (
-          <div key={r.id} className="flex items-center gap-2 py-2.5">
-            <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
-              {r.name}
-              {r.isOwner && <span className="ml-1.5 text-[11px] text-orbit-cyan">방장</span>}
-            </span>
-            <button
-              disabled={busy === r.id}
-              onClick={async () => {
-                setBusy(r.id)
-                setErr(null)
-                try {
-                  await switchRoom(r.id)
-                  await onSwitched()
-                } catch (e) {
-                  setErr(e.message)
-                } finally {
-                  setBusy(null)
-                }
-              }}
-              className="shrink-0 rounded-lg bg-orbit-cyan/15 px-3 py-1.5 text-[13px] font-bold text-orbit-cyan disabled:opacity-40"
-            >
-              {busy === r.id ? '이동 중…' : '이동'}
-            </button>
+    <div className="space-y-2.5">
+      {err && <p className="px-1 text-[13px] text-orbit-red">{err}</p>}
+
+      {/* 지금 항로 */}
+      <div
+        className="flex items-center gap-3 rounded-2xl border border-orbit-cyan/50 bg-orbit-cyan/10 p-3.5"
+        style={{ boxShadow: '0 0 18px rgba(0,212,255,0.16)' }}
+      >
+        <RoomPlanet name={me.room.name} lit />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[16px] font-bold text-orbit-text">{me.room.name}</div>
+          <div className="mt-0.5 text-[12px] text-orbit-cyan/80">
+            {me.room.isOwner ? '방장' : '참가자'} · {me.room.memberCount}명
           </div>
-        ))}
+        </div>
+        <span className="neon shrink-0 text-[11px] font-bold tracking-widest text-orbit-cyan">
+          현재 항로
+        </span>
       </div>
+
+      {/* 다른 항로 — 줄 전체가 버튼 */}
+      {others.map((r) => (
+        <button
+          key={r.id}
+          disabled={busy === r.id}
+          onClick={async () => {
+            setBusy(r.id)
+            setErr(null)
+            try {
+              await switchRoom(r.id)
+              await onSwitched()
+            } catch (e) {
+              setErr(e.message)
+            } finally {
+              setBusy(null)
+            }
+          }}
+          className="flex w-full items-center gap-3 rounded-2xl border border-white/12 bg-white/5 p-3.5 text-left transition hover:border-orbit-cyan/35 hover:bg-orbit-cyan/5 disabled:opacity-50"
+        >
+          <RoomPlanet name={r.name} />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[16px] font-bold text-orbit-text">{r.name}</div>
+            {r.isOwner && <div className="mt-0.5 text-[12px] text-orbit-dim">방장</div>}
+          </div>
+          <span className="shrink-0 text-[14px] font-bold text-orbit-cyan">
+            {busy === r.id ? '이동 중…' : '이동 ›'}
+          </span>
+        </button>
+      ))}
+
+      {/* 새 항로 */}
+      <button
+        onClick={onAdd}
+        className="w-full rounded-2xl border border-dashed border-orbit-cyan/35 bg-transparent py-3.5 text-[14px] font-bold text-orbit-cyan/90 transition hover:bg-orbit-cyan/5"
+      >
+        + 방 추가
+      </button>
     </div>
   )
 }
