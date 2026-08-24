@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
-import { CheckCircle, Crosshair, Navigation, Shield, Square, Target, Zap } from 'lucide-react'
+import { Crosshair, Navigation, Shield, Square, Target, Zap } from 'lucide-react'
 import { Spaceship } from './Spaceship'
 import { IncomingMissiles } from './RouteMap'
 import {
@@ -258,6 +258,12 @@ export function StudySession({
 }) {
   const [now, setNow] = useState(Date.now())
   const [confirmCancel, setConfirmCancel] = useState(false)
+  /* 정지 순간의 시각. 정지하면 시계·수치·함선이 그 자리에서 멈춘다 —
+   * 별도 화면으로 넘어가지 않는다. 다시 항해하면 실제 경과 시간으로 돌아온다. */
+  const [pausedAt, setPausedAt] = useState(null)
+  useEffect(() => {
+    setPausedAt(finishing ? Date.now() : null)
+  }, [finishing])
   /* 함선이 계기 자리에 앉기 전까지 계기는 꺼져 있다. 자리는 차지한다 —
    * 그래야 함선이 정확히 제 자리로 날아든다. */
   const [arrived, setArrived] = useState(!entering)
@@ -272,7 +278,10 @@ export function StudySession({
     return () => clearInterval(t)
   }, [])
 
-  const seconds = Math.max(0, Math.floor((now - new Date(session.startedAt).getTime()) / 1000))
+  const seconds = Math.max(
+    0,
+    Math.floor(((pausedAt ?? now) - new Date(session.startedAt).getTime()) / 1000),
+  )
   const minutes = Math.max(1, Math.floor(seconds / 60))
 
   /* 다섯 시간이 넘으면 이 세션은 무효다(서버가 판정한다). 넘기 전부터 알려줘야
@@ -308,125 +317,11 @@ export function StudySession({
 
   const accent = 'var(--color-orbit-cyan)'
 
-  /* ── 기록 남기기 화면 ── */
-  if (finishing) {
-    return (
-      <div className="relative -mx-5 min-h-[calc(100vh-12rem)] overflow-hidden px-5 py-6">
-        <Stars />
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative mx-auto w-full max-w-sm"
-        >
-          <div className="mb-6 text-center">
-            <CheckCircle className="mx-auto mb-3 h-11 w-11 text-orbit-cyan" />
-            <h2 className="text-[22px] font-bold" style={{ color: accent }}>
-              완료
-            </h2>
-            <p className="mt-1.5 text-[15px] text-orbit-dim">
-              공부 시간 <span className="code font-bold text-orbit-text">{fmtClock(seconds)}</span>
-            </p>
-          </div>
-
-          <div className="panel space-y-5 p-5">
-            <div className="grid grid-cols-2 gap-3 text-center">
-              <div className="rounded-control border border-orbit-cyan/20 bg-orbit-cyan/10 p-3">
-                <div className="text-[13px] text-orbit-dim">에너지</div>
-                <div className="num text-[20px] font-bold text-orbit-cyan">
-                  +{gainedEnergy.toFixed(1)}E
-                </div>
-              </div>
-              <div className="rounded-control border border-orbit-cyan/20 bg-orbit-cyan/10 p-3">
-                <div className="text-[13px] text-orbit-dim">거리</div>
-                <div className="num text-[20px] font-bold text-orbit-cyan">
-                  +{gainedDistance.toFixed(2)} ly
-                </div>
-              </div>
-            </div>
-
-            {error && <p className="text-[15px] text-orbit-red">{error}</p>}
-
-            <div className="flex gap-3">
-              <button
-                onClick={onStop}
-                className="h-12 flex-1 rounded-control border border-white/15 text-[15px] font-bold text-orbit-text"
-              >
-                계속 항해
-              </button>
-              <button
-                onClick={onFinish}
-                disabled={busy}
-                className="h-12 flex-1 rounded-control text-[15px] font-bold text-orbit-bg disabled:opacity-40"
-                style={{ background: accent }}
-              >
-                {busy ? '저장하는 중…' : '기록하기'}
-              </button>
-            </div>
-
-            {/* 버리는 길. 예전엔 타이머 화면 맨 위에 단추로 있었는데, 바로 아래
-                정지 단추와 하는 일이 겹쳐 보여서 뺐다. 그래도 잘못 켠 세션을
-                버릴 데는 있어야 하므로 여기, 정말 끝낼 때 고르는 자리에 둔다 —
-                눈에 덜 띄는 글자 한 줄이면 충분하다. */}
-            <button
-              onClick={() => setConfirmCancel(true)}
-              className="w-full text-center text-[13px] font-bold text-orbit-red/70 hover:text-orbit-red"
-            >
-              기록하지 않고 버리기
-            </button>
-          </div>
-        </motion.div>
-        <AnimatePresence>
-          {confirmCancel && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-              onClick={() => setConfirmCancel(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                onClick={(e) => e.stopPropagation()}
-                className="mx-6 w-full max-w-sm rounded-card border border-orbit-red/30 bg-orbit-panel p-6"
-              >
-                <div className="space-y-3 text-center">
-                  <div className="mx-auto grid h-12 w-12 place-items-center rounded-full border border-orbit-red/30 bg-orbit-red/15">
-                    <Crosshair className="h-5 w-5 text-orbit-red" />
-                  </div>
-                  <h3 className="text-[16px] font-bold text-orbit-text">항해 기록을 취소할까요?</h3>
-                  <p className="text-[14px] leading-relaxed text-orbit-dim">
-                    지금까지 {fmtClock(seconds)} 공부한 게 기록되지 않고 사라집니다.
-                  </p>
-                </div>
-                <div className="mt-5 flex gap-3">
-                  <button
-                    onClick={() => setConfirmCancel(false)}
-                    className="h-11 flex-1 rounded-control border border-orbit-cyan/25 bg-orbit-cyan/10 text-[14px] font-bold text-orbit-cyan"
-                  >
-                    계속 항해
-                  </button>
-                  <button
-                    onClick={onCancel}
-                    className="h-11 flex-1 rounded-control border border-orbit-red/30 bg-orbit-red/20 text-[14px] font-bold text-orbit-red"
-                  >
-                    기록 취소
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    )
-  }
-
   /* ── 항해 중 화면 ── */
   return (
     <div className="relative -mx-5 min-h-[calc(100vh-12rem)] overflow-hidden px-5 pt-6 pb-12">
       <Stars />
-      {speed > 0 && <WarpStreaks speed={speed} />}
+      {speed > 0 && !finishing && <WarpStreaks speed={speed} />}
 
       {/* 요소 사이 간격(gap-7)과 화면 위아래 여백을 넉넉히 잡는다. 시계·배·수치·
           정지 버튼이 서로 붙어 있으면 계기판이 아니라 목록처럼 보인다. */}
@@ -506,7 +401,7 @@ export function StudySession({
         >
           <Spaceship
             status={statusOf(energy)}
-            isStudying={energy > 0}
+            isStudying={energy > 0 && !finishing}
             shields={shields}
             energy={energy}
             size={140}
@@ -551,8 +446,84 @@ export function StudySession({
             gainedDistance={gainedDistance}
           />
 
-          <SlideToStop onStop={onStop} />
+          {finishing ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full max-w-xs space-y-3"
+            >
+              {error && <p className="text-center text-[14px] text-orbit-red">{error}</p>}
+              <div className="flex gap-3">
+                <button
+                  onClick={onStop}
+                  className="h-12 flex-1 rounded-control border border-white/15 text-[15px] font-bold text-orbit-text"
+                >
+                  계속 항해
+                </button>
+                <button
+                  onClick={onFinish}
+                  disabled={busy}
+                  className="h-12 flex-1 rounded-control text-[15px] font-bold text-orbit-bg disabled:opacity-40"
+                  style={{ background: accent }}
+                >
+                  {busy ? '저장하는 중…' : '기록하기'}
+                </button>
+              </div>
+              <button
+                onClick={() => setConfirmCancel(true)}
+                className="w-full text-center text-[13px] font-bold text-orbit-red/70 hover:text-orbit-red"
+              >
+                기록하지 않고 버리기
+              </button>
+            </motion.div>
+          ) : (
+            <SlideToStop onStop={onStop} />
+          )}
         </motion.div>
+
+        <AnimatePresence>
+          {confirmCancel && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+              onClick={() => setConfirmCancel(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="mx-6 w-full max-w-sm rounded-card border border-orbit-red/30 bg-orbit-panel p-6"
+              >
+                <div className="space-y-3 text-center">
+                  <div className="mx-auto grid h-12 w-12 place-items-center rounded-full border border-orbit-red/30 bg-orbit-red/15">
+                    <Crosshair className="h-5 w-5 text-orbit-red" />
+                  </div>
+                  <h3 className="text-[16px] font-bold text-orbit-text">항해 기록을 취소할까요?</h3>
+                  <p className="text-[14px] leading-relaxed text-orbit-dim">
+                    지금까지 {fmtClock(seconds)} 공부한 게 기록되지 않고 사라집니다.
+                  </p>
+                </div>
+                <div className="mt-5 flex gap-3">
+                  <button
+                    onClick={() => setConfirmCancel(false)}
+                    className="h-11 flex-1 rounded-control border border-orbit-cyan/25 bg-orbit-cyan/10 text-[14px] font-bold text-orbit-cyan"
+                  >
+                    계속 항해
+                  </button>
+                  <button
+                    onClick={onCancel}
+                    className="h-11 flex-1 rounded-control border border-orbit-red/30 bg-orbit-red/20 text-[14px] font-bold text-orbit-red"
+                  >
+                    기록 취소
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
