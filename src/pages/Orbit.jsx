@@ -149,6 +149,41 @@ export const LAUNCH_MS = 2400
 /** 화면이 바뀐 뒤 어둠이 걷히는 시간. 이 밑에서 함선이 계기 자리로 날아든다. */
 export const LANDING_MS = 700
 
+/* 귀환 연출 시간 — 중앙에 머무는 시간과 어둠이 걷히는 시간. */
+export const RETURN_HOLD_MS = 1200
+export const RETURN_FADE_MS = 600
+
+/* 기록을 마치면 발사의 역순이다: 계기의 함선이 중앙으로 떠올랐다가('fly'),
+ * 어둠이 걷히는 사이 홈 계기판 자리로 날아 들어간다('fade'). */
+function ReturnOverlay({ phase, ship }) {
+  return (
+    <motion.div
+      className="pointer-events-none fixed inset-0 z-50 overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: phase === 'fade' ? 0 : 1 }}
+      transition={{ duration: phase === 'fade' ? RETURN_FADE_MS / 1000 : 0.3, ease: 'linear' }}
+      style={{ background: '#05070f' }}
+    >
+      {phase === 'fly' && (
+        <div className="grid h-full place-items-center">
+          <motion.div
+            layoutId="my-ship-transit"
+            transition={{ layout: { type: 'tween', duration: 1.0, ease: [0.3, 0, 0.2, 1] } }}
+          >
+            <Spaceship
+              status={ship?.status ?? 'normal'}
+              isStudying={false}
+              shields={ship?.shields ?? 0}
+              energy={ship ? Math.max(0, ship.energyBalance ?? 0) : null}
+              size={150}
+            />
+          </motion.div>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
 function LandingVeil() {
   return (
     <motion.div
@@ -161,7 +196,7 @@ function LandingVeil() {
   )
 }
 
-function LaunchOverlay() {
+function LaunchOverlay({ ship }) {
   return (
     <motion.div
       className="pointer-events-none fixed inset-0 z-50 overflow-hidden"
@@ -202,7 +237,15 @@ function LaunchOverlay() {
             animate={{ scale: [1, 1.1, 1.1, 1], y: [0, -12, -12, 0] }}
             transition={{ duration: LAUNCH_MS / 1000, times: [0, 0.35, 0.72, 0.95] }}
           >
-            <Spaceship status="normal" isStudying size={150} />
+            {/* 홈에서 보이던 그 배 그대로 — 에너지에 따른 빨간 피해색과 방어막을
+                연출 중에도 유지한다. */}
+            <Spaceship
+              status={ship?.status ?? 'normal'}
+              isStudying
+              shields={ship?.shields ?? 0}
+              energy={ship ? Math.max(0, ship.energyBalance ?? 0) : null}
+              size={150}
+            />
           </motion.div>
         </motion.div>
       </div>
@@ -1472,6 +1515,8 @@ export default function Orbit() {
   const [justLaunched, setJustLaunched] = useState(false)
   /* 연출이 끝나고 공부 화면이 깔린 직후, 그 위에서 걷히는 어둠. */
   const [landing, setLanding] = useState(false)
+  /* 귀환 연출 단계. null | 'fly'(중앙으로) | 'fade'(어둠 걷히며 홈 안착). */
+  const [returning, setReturning] = useState(null)
   /* uid → 프사(data URL). 함선 옆에 띄운다. 프사는 자주 안 바뀌니 20초 폴링에
    * 얹지 않고 들어올 때 한 번만 받는다. */
   const [photos, setPhotos] = useState({})
@@ -1540,6 +1585,18 @@ export default function Orbit() {
     const t = setTimeout(() => setLanding(false), LANDING_MS + 100)
     return () => clearTimeout(t)
   }, [landing])
+
+  useEffect(() => {
+    if (returning !== 'fly') return
+    const t = setTimeout(() => setReturning('fade'), RETURN_HOLD_MS)
+    return () => clearTimeout(t)
+  }, [returning])
+
+  useEffect(() => {
+    if (returning !== 'fade') return
+    const t = setTimeout(() => setReturning(null), RETURN_FADE_MS + 150)
+    return () => clearTimeout(t)
+  }, [returning])
 
   /* 맵의 위치·미사일은 서버가 계산해 주므로, 남이 공부하거나 쏜 걸 보려면 주기적으로
    * 다시 받아야 한다. 화면을 보고 있을 때만 20초마다.
@@ -1655,6 +1712,7 @@ export default function Orbit() {
               setSession(null)
               setFinishing(false)
               setSaving({ busy: false, error: null })
+              setReturning('fly')
               load()
             } catch (e) {
               setSaving({ busy: false, error: e.message })
@@ -1667,7 +1725,8 @@ export default function Orbit() {
 
   return (
     <div className="space-y-4">
-      {igniting && <LaunchOverlay />}
+      {igniting && <LaunchOverlay ship={state.ship} />}
+      {returning && <ReturnOverlay phase={returning} ship={state.ship} />}
       <div className="flex gap-1 rounded-control border border-white/10 bg-white/5 p-1">
         {VIEWS.map((v) => (
           <button
@@ -1690,7 +1749,11 @@ export default function Orbit() {
 
       {view === 'hud' && (
         <div className="space-y-4">
-          <ShipHero ship={state.ship} isStudying={false} launching={igniting} />
+          <ShipHero
+            ship={state.ship}
+            isStudying={false}
+            launching={igniting || returning === 'fly'}
+          />
           {/* 날아오는 게 있으면 함선 상태 바로 다음에 알린다 — 방어막을 살지
               말지가 여기서 갈린다. 없으면 아무것도 안 그린다. */}
           <IncomingMissiles missiles={state.missiles} fleet={state.fleet} />
