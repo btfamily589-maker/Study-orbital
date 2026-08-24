@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import { ChevronRight, Smartphone } from 'lucide-react'
 import { hasFirebase } from '../lib/firebase'
 import {
@@ -21,6 +22,7 @@ import { prettyDate, ymd } from '../lib/date'
 import { fetchRoomPhotos } from '../lib/rooms'
 import { IncomingMissiles, RouteMap, ShieldDomeIcon, ShipHero } from '../components/orbit/RouteMap'
 import { StudySession } from '../components/orbit/StudySession'
+import { Spaceship } from '../components/orbit/Spaceship'
 import { WeaponIcon } from '../components/orbit/WeaponIcon'
 import { MAX_ENERGY, MAX_SHIELDS, SHIELD_PRICE, speedOf } from '../lib/orbitRules'
 
@@ -139,6 +141,62 @@ function JoinCard({ onJoined }) {
 }
 
 /* ---------------- 엔진 점화 ---------------- */
+
+/* 공부 시작을 누르면 잠깐 뜨는 발사 연출. 함선이 워프 광선을 뚫고 솟아오른 뒤
+ * 스스로 어두워지며 공부 화면을 드러낸다. 실제 세션은 이미 서버에서 돌기 시작한
+ * 뒤라, 이 화면은 순수하게 눈맛이다. */
+export const LAUNCH_MS = 1650
+
+function LaunchOverlay() {
+  return (
+    <motion.div
+      className="pointer-events-none fixed inset-0 z-50 overflow-hidden bg-[#05070f]"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 0 }}
+      transition={{ delay: 1.2, duration: 0.42 }}
+    >
+      {/* 워프 광선 — 아래에서 위로 가속 */}
+      {Array.from({ length: 16 }, (_, i) => (
+        <motion.span
+          key={i}
+          className="absolute w-[2px] rounded-full"
+          style={{
+            left: `${(i * 61 + 7) % 100}%`,
+            height: 70 + (i % 5) * 34,
+            background: i % 4 === 3 ? 'rgba(143,107,255,0.7)' : 'rgba(0,212,255,0.7)',
+          }}
+          initial={{ top: '112%', opacity: 0 }}
+          animate={{ top: '-35%', opacity: [0, 1, 0.9, 0] }}
+          transition={{
+            duration: 0.62 + (i % 4) * 0.14,
+            repeat: Infinity,
+            ease: 'linear',
+            delay: (i % 7) * 0.09,
+          }}
+        />
+      ))}
+
+      <div className="grid h-full place-items-center">
+        <motion.div
+          initial={{ y: 150, scale: 0.8, opacity: 0.6 }}
+          animate={{ y: -46, scale: 1.04, opacity: 1 }}
+          transition={{ duration: 1.35, ease: [0.32, 0, 0.15, 1] }}
+        >
+          <Spaceship status="normal" isStudying size={150} />
+        </motion.div>
+      </div>
+
+      <motion.p
+        className="neon absolute inset-x-0 bottom-[21%] text-center text-[15px] font-bold tracking-[0.35em] text-orbit-cyan"
+        initial={{ opacity: 0, letterSpacing: '0.2em' }}
+        animate={{ opacity: [0, 1, 1], letterSpacing: '0.35em' }}
+        transition={{ duration: 1.1 }}
+      >
+        엔진 점화
+      </motion.p>
+    </motion.div>
+  )
+}
 
 /* 세션이 도는 동안엔 이 카드가 아니라 StudySession 화면이 탭 전체를 차지한다.
  * 여기는 시작 버튼만 맡는다. */
@@ -1396,6 +1454,8 @@ export default function Orbit() {
   // 정지를 누르면 기록 입력 화면으로 넘어간다. 이때도 세션은 아직 살아 있다.
   const [finishing, setFinishing] = useState(false)
   const [saving, setSaving] = useState({ busy: false, error: null })
+  /* 발사 연출. 켜지면 LAUNCH_MS 뒤에 스스로 꺼진다. */
+  const [igniting, setIgniting] = useState(false)
   /* uid → 프사(data URL). 함선 옆에 띄운다. 프사는 자주 안 바뀌니 20초 폴링에
    * 얹지 않고 들어올 때 한 번만 받는다. */
   const [photos, setPhotos] = useState({})
@@ -1447,6 +1507,12 @@ export default function Orbit() {
       .then(setPhotos)
       .catch(() => {})
   }, [load])
+
+  useEffect(() => {
+    if (!igniting) return
+    const t = setTimeout(() => setIgniting(false), LAUNCH_MS)
+    return () => clearTimeout(t)
+  }, [igniting])
 
   /* 맵의 위치·미사일은 서버가 계산해 주므로, 남이 공부하거나 쏜 걸 보려면 주기적으로
    * 다시 받아야 한다. 화면을 보고 있을 때만 20초마다.
@@ -1526,49 +1592,53 @@ export default function Orbit() {
 
   if (session) {
     return (
-      <StudySession
-        session={session}
-        ship={state.ship}
-        fleet={state.fleet}
-        missiles={state.missiles}
-        finishing={finishing}
-        busy={saving.busy}
-        error={saving.error}
-        onStop={() => {
-          setFinishing((f) => !f)
-          setSaving({ busy: false, error: null })
-        }}
-        onCancel={async () => {
-          await cancelSession().catch(() => {})
-          setSession(null)
-          setFinishing(false)
-          load()
-        }}
-        onFinish={async () => {
-          setSaving({ busy: true, error: null })
-          try {
-            await endSession({
-              sessionId: session.sessionId,
-              // 실제 판정은 서버가 자기가 기억한 시작 시각으로 한다.
-              durationMinutes: Math.max(
-                1,
-                Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 60000),
-              ),
-            })
+      <>
+        {igniting && <LaunchOverlay />}
+        <StudySession
+          session={session}
+          ship={state.ship}
+          fleet={state.fleet}
+          missiles={state.missiles}
+          finishing={finishing}
+          busy={saving.busy}
+          error={saving.error}
+          onStop={() => {
+            setFinishing((f) => !f)
+            setSaving({ busy: false, error: null })
+          }}
+          onCancel={async () => {
+            await cancelSession().catch(() => {})
             setSession(null)
             setFinishing(false)
-            setSaving({ busy: false, error: null })
             load()
-          } catch (e) {
-            setSaving({ busy: false, error: e.message })
-          }
-        }}
-      />
+          }}
+          onFinish={async () => {
+            setSaving({ busy: true, error: null })
+            try {
+              await endSession({
+                sessionId: session.sessionId,
+                // 실제 판정은 서버가 자기가 기억한 시작 시각으로 한다.
+                durationMinutes: Math.max(
+                  1,
+                  Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 60000),
+                ),
+              })
+              setSession(null)
+              setFinishing(false)
+              setSaving({ busy: false, error: null })
+              load()
+            } catch (e) {
+              setSaving({ busy: false, error: e.message })
+            }
+          }}
+        />
+      </>
     )
   }
 
   return (
     <div className="space-y-4">
+      {igniting && <LaunchOverlay />}
       <div className="flex gap-1 rounded-control border border-white/10 bg-white/5 p-1">
         {VIEWS.map((v) => (
           <button
@@ -1600,7 +1670,9 @@ export default function Orbit() {
             onStart={async () => {
               setFinishing(false)
               try {
-                setSession(await startSession())
+                const s = await startSession()
+                setIgniting(true)
+                setSession(s)
               } catch (e) {
                 /* 다른 기기가 이미 돌리고 있으면 에러로 끝내지 않는다. 그 세션을
                  * 보여주고 이어받을지 물어본다. */

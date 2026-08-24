@@ -1,0 +1,14 @@
+{
+  "name": "Study Orbital",
+  "short_name": "Study Orbital",
+  "description": "공부한 시간이 우주선의 연료가 됩니다. 친구들과 같은 항로에서 경쟁하세요.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#05070f",
+  "theme_color": "#05070f",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
