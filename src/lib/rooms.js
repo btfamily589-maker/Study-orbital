@@ -29,3 +29,6 @@ export const leaveRoom = () => call('/api/room/leave', { method: 'POST' })
 export const setMyPhoto = (photo) => call('/api/me/photo', { method: 'POST', body: { photo } })
 /** 방 참가자들의 프사 — { uid: dataUrl }. 함선 옆에 띄운다. */
 export const fetchRoomPhotos = () => call('/api/room/photos')
+/** 이 기기의 푸시 토큰을 내 uid로 등록한다 — 미사일 알림이 이걸 보고 온다. */
+export const registerPushToken = (token) =>
+  call('/api/push/register', { method: 'POST', body: { token } })

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AuthGate from './components/AuthGate'
 import RoomGate from './components/RoomGate'
 import Orbit from './pages/Orbit'
@@ -7,6 +7,7 @@ import { Starfield } from './components/orbit/Starfield'
 import { OrbitButton } from './components/OrbitButton'
 import { Sheet } from './components/ui'
 import { leaveRoom, setMyPhoto } from './lib/rooms'
+import { enablePush, isPushRegistered, listenForegroundMessages, syncPushToken } from './lib/push'
 import { compressProfilePhoto } from './lib/photo'
 import { logout } from './lib/firebase'
 
@@ -28,6 +29,13 @@ export default function App() {
 
 function Main({ me, refresh }) {
   const [roomOpen, setRoomOpen] = useState(false)
+
+  /* 탭을 보고 있는 동안 오는 푸시도 받아 띄우고, 이미 허락된 기기는 토큰을
+   * 지금 계정으로 다시 적어둔다(브라우저가 토큰을 갈아끼우는 일이 있다). */
+  useEffect(() => {
+    listenForegroundMessages()
+    syncPushToken()
+  }, [])
   const [adminOpen, setAdminOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -67,6 +75,8 @@ function Main({ me, refresh }) {
           </div>
 
           <PhotoRow me={me} refresh={refresh} />
+
+          <PushRow />
 
           {me.room.isOwner && (
             <OrbitButton
@@ -174,6 +184,53 @@ function PhotoRow({ me, refresh }) {
           className="shrink-0 rounded-lg px-2 py-2 text-[13px] font-semibold text-orbit-dim"
         >
           지우기
+        </button>
+      )}
+    </div>
+  )
+}
+
+/* 알림 줄 — 미사일 발사·착탄 푸시를 이 기기로 받을지. iPhone은 홈 화면에
+ * 추가한 PWA에서만 켤 수 있다(사파리 탭에서는 권한 창이 안 뜬다). */
+function PushRow() {
+  const [on, setOn] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+
+  useEffect(() => {
+    isPushRegistered().then(setOn)
+  }, [])
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-white/12 bg-white/5 p-3">
+      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10 text-[20px]">
+        {on ? '🔔' : '🔕'}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[14px] font-semibold">미사일 알림</div>
+        <div className="text-[12px] text-orbit-dim">
+          {on ? '이 기기로 발사·착탄 알림이 옵니다' : '발사·착탄을 푸시로 알려줍니다'}
+        </div>
+        {err && <div className="mt-0.5 text-[12px] leading-relaxed text-orbit-red">{err}</div>}
+      </div>
+      {!on && (
+        <button
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            setErr(null)
+            try {
+              await enablePush()
+              setOn(true)
+            } catch (e) {
+              setErr(e.message)
+            } finally {
+              setBusy(false)
+            }
+          }}
+          className="shrink-0 rounded-lg bg-orbit-cyan/15 px-3 py-2 text-[13px] font-bold text-orbit-cyan disabled:opacity-40"
+        >
+          {busy ? '켜는 중…' : '알림 켜기'}
         </button>
       )}
     </div>

@@ -60,6 +60,10 @@ let authCached = null
 function adminAuth() {
   return authCached
 }
+let messagingCached = null
+function adminMessaging() {
+  return messagingCached
+}
 
 async function ensureAdmin() {
   const appRef = await firebaseAdmin()
@@ -67,8 +71,10 @@ async function ensureAdmin() {
   if (!dbCached) {
     const { getFirestore } = await import('firebase-admin/firestore')
     const { getAuth } = await import('firebase-admin/auth')
+    const { getMessaging } = await import('firebase-admin/messaging')
     dbCached = getFirestore(appRef)
     authCached = getAuth(appRef)
+    messagingCached = getMessaging(appRef)
   }
   return true
 }
@@ -348,6 +354,28 @@ app.post('/api/room/leave', requireUser, async (req, res) => {
   }
 })
 
+/* ---------------- 웹 푸시 ----------------
+ * 클라이언트는 Firestore를 직접 못 쓴다(규칙이 전부 잠김) — 토큰도 서버를
+ * 거쳐 등록한다. 문서 ID가 토큰이고 안에 uid: 미사일 알림은 이 uid로
+ * 받을 사람 것만 골라 나간다(server/orbit/notify.js). */
+app.post('/api/push/register', requireUser, async (req, res) => {
+  const token = String(req.body?.token ?? '')
+  if (!token || token.length > 4096 || token.includes('/')) {
+    return res.status(400).json({ error: '토큰이 올바르지 않습니다.' })
+  }
+  try {
+    await db().doc(`pushTokens/${token}`).set({
+      uid: req.user.uid,
+      ua: String(req.headers['user-agent'] ?? '').slice(0, 120),
+      updatedAt: new Date().toISOString(),
+    })
+    res.json({ ok: true })
+  } catch (e) {
+    console.error('[push/register]', e)
+    res.status(502).json({ error: '알림 등록에 실패했습니다.' })
+  }
+})
+
 /* ---------------- Orbit — 방마다 라우터 한 벌 ----------------
  * orbit 모듈들은 store(방 하나)를 닫아 넣고 만들어진다. 방마다 라우터를 하나씩
  * 게으르게 만들어 두고, 요청한 사람이 들어가 있는 방의 것으로 넘긴다. */
@@ -359,7 +387,7 @@ function orbitRouterFor(roomId) {
       createOrbitRouter({
         adminAuth,
         adminDb: db,
-        adminMessaging: () => null, // 웹푸시는 아직 없다 — notify가 알아서 건너뛴다
+        adminMessaging,
         classId: roomId,
       }),
     )

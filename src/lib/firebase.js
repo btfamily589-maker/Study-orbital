@@ -9,21 +9,28 @@ import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged } from 'fir
  */
 const trim = (v) => v?.trim() || v
 
+const appId = trim(import.meta.env.VITE_FIREBASE_APP_ID)
+
 const cfg = {
   apiKey: trim(import.meta.env.VITE_FIREBASE_API_KEY),
   authDomain: trim(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
   projectId: trim(import.meta.env.VITE_FIREBASE_PROJECT_ID),
-  appId: trim(import.meta.env.VITE_FIREBASE_APP_ID),
+  appId,
+  /* FCM(웹 푸시)이 요구한다. appId가 "1:숫자:web:..." 꼴이라 그 숫자가 곧
+   * sender ID다 — 값을 하나 더 받아 적게 하지 않는다. */
+  messagingSenderId:
+    trim(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID) || appId?.split(':')[1],
 }
 
 export const hasFirebase = Boolean(cfg.apiKey && cfg.projectId)
+export const firebaseConfig = cfg
 
 let app, auth
 if (hasFirebase) {
   app = initializeApp(cfg)
   auth = getAuth(app)
 }
-export { auth }
+export { app, auth }
 
 /* 자체 로그인. 서버(/api/login, /api/signup)가 이름+비밀번호를 확인해서
  * Firebase 커스텀 토큰을 돌려주면, 그걸로 로그인을 마무리한다. */
@@ -38,7 +45,8 @@ async function authWith(path, name, pin, fallbackError) {
   return signInWithCustomToken(auth, data.token)
 }
 
-export const loginWithPin = (name, pin) => authWith('/api/login', name, pin, '로그인에 실패했습니다.')
+export const loginWithPin = (name, pin) =>
+  authWith('/api/login', name, pin, '로그인에 실패했습니다.')
 export const signUpWithPin = (name, pin) =>
   authWith('/api/signup', name, pin, '계정을 만들지 못했습니다.')
 
