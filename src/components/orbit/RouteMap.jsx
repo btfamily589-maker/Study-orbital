@@ -1792,26 +1792,49 @@ export function RouteMap({ fleet, missiles = [], photos = {} }) {
 }
 
 /** 내 함선을 크게 보여주는 카드. HUD 맨 위에 온다. */
-export function ShipHero({ ship, isStudying }) {
+export function ShipHero({ ship, isStudying, dim = false }) {
   const energy = Math.max(0, ship.energyBalance ?? 0)
   const speed = speedOf(energy)
 
   return (
-    <div className="panel panel-cyan relative flex flex-col items-center overflow-hidden py-5">
-      <Spaceship
-        status={ship.status}
-        isStudying={isStudying}
-        shields={ship.shields ?? 0}
-        energy={energy}
-        size={150}
-      />
+    <motion.div
+      className="panel panel-cyan relative flex flex-col items-center overflow-hidden py-5"
+      initial={false}
+      /* 연출 중에는 상자(테두리·배경)도 함께 걷힌다 — 빈 액자만 남으면
+         "우주선만 보인다"가 안 된다. 함선은 이 상자 안에서 그대로 빛난다. */
+      animate={{
+        borderColor: dim ? 'rgba(0,212,255,0)' : undefined,
+        backgroundColor: dim ? 'rgba(0,0,0,0)' : undefined,
+        boxShadow: dim ? '0 0 0 rgba(0,0,0,0)' : undefined,
+      }}
+      transition={{ duration: dim ? 0.42 : 0.45, ease: 'easeOut' }}
+    >
+      {/* 함선은 연출 중에도 그대로 있다 — 같은 layoutId를 단 공부 화면의 함선과
+          한 마리로 이어져, 화면이 바뀔 때 이 자리에서 저 자리로 날아간다. */}
+      <motion.div
+        layoutId="my-ship-transit"
+        transition={{ layout: { type: 'tween', duration: 1.0, ease: [0.3, 0, 0.2, 1] } }}
+      >
+        <Spaceship
+          status={ship.status}
+          isStudying={isStudying}
+          shields={ship.shields ?? 0}
+          energy={energy}
+          size={150}
+        />
+      </motion.div>
       {/* 거리·속도·순위를 같은 크기·같은 파란색으로 나란히 둔다. 예전엔 순위만
           아래에 작은 회색 글씨로 따로 적혀 있어서 곁다리처럼 보였는데, 셋 다
           "내가 지금 어떤 상태인가"를 말하는 같은 급의 숫자다.
 
           1시간이면 3E, 에너지 1당 1/3광년이므로 최고속에서 정확히 1광년/시간이다.
           즉 ly/h가 곧 지금 속도다. 에너지가 바닥나면 0. */}
-      <div className="mt-1 flex items-end justify-center gap-4 text-center">
+      <motion.div
+        className="mt-1 flex items-end justify-center gap-4 text-center"
+        initial={false}
+        animate={{ opacity: dim ? 0 : 1 }}
+        transition={{ duration: dim ? 0.42 : 0.45, ease: 'easeOut' }}
+      >
         <div>
           <div className="num text-[30px] leading-none font-extrabold text-orbit-cyan neon">
             {Math.round(ship.routePosition * 100) / 100}
@@ -1835,7 +1858,7 @@ export function ShipHero({ ship, isStudying }) {
           </div>
           <div className="mt-1 text-[13px] text-orbit-dim">순위</div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }

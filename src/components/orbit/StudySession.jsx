@@ -222,6 +222,8 @@ export function StudySession({
   finishing,
   busy,
   error,
+  /** 화면 전환 연출이 도는 중 — 계기는 빠지고 함선만 남는다. */
+  dim = false,
 }) {
   const [now, setNow] = useState(Date.now())
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -301,7 +303,12 @@ export function StudySession({
         {/* 공부하는 동안에도 미사일은 날아온다. 맞으면 그때부터 느려지므로,
             방어막을 살지 지금 접을지 정하려면 여기서 보여야 한다 — 예전엔 맵으로
             나가야만 보였고, 나가면 타이머 화면을 떠나야 했다. */}
-        <div className="flex w-full flex-col items-center gap-7">
+        <motion.div
+          className="flex w-full flex-col items-center gap-7"
+          initial={false}
+          animate={{ opacity: dim ? 0 : 1 }}
+          transition={{ duration: dim ? 0.42 : 0.45, ease: 'easeOut' }}
+        >
           <div className="w-full">
             <IncomingMissiles missiles={missiles} fleet={fleet} />
           </div>
@@ -360,17 +367,29 @@ export function StudySession({
               )}
             </div>
           )}
-        </div>
+        </motion.div>
 
-        <Spaceship
-          status={statusOf(energy)}
-          isStudying={energy > 0 && !finishing}
-          shields={shields}
-          energy={energy}
-          size={140}
-        />
+        {/* 홈 계기판의 함선과 같은 layoutId — 화면이 바뀌면 이 자리로 날아온다.
+            연출 중에도 사라지지 않으므로 함선은 한 마리가 계속 이어진다. */}
+        <motion.div
+          layoutId="my-ship-transit"
+          transition={{ layout: { type: 'tween', duration: 1.0, ease: [0.3, 0, 0.2, 1] } }}
+        >
+          <Spaceship
+            status={statusOf(energy)}
+            isStudying={energy > 0 && !finishing}
+            shields={shields}
+            energy={energy}
+            size={140}
+          />
+        </motion.div>
 
-        <div className="flex w-full flex-col items-center gap-7">
+        <motion.div
+          className="flex w-full flex-col items-center gap-7"
+          initial={false}
+          animate={{ opacity: dim ? 0 : 1 }}
+          transition={{ duration: dim ? 0.42 : 0.45, ease: 'easeOut' }}
+        >
           {/* 앞뒤 사람과의 격차 */}
           {(neighbours.ahead || neighbours.behind) && (
             <div className="flex w-full max-w-xs items-center justify-between text-[14px]">
@@ -436,7 +455,7 @@ export function StudySession({
           ) : (
             <SlideToStop onStop={onStop} />
           )}
-        </div>
+        </motion.div>
 
         <AnimatePresence>
           {confirmCancel && (
