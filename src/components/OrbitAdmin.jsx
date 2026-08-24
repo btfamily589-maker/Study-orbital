@@ -70,7 +70,7 @@ export default function OrbitAdmin() {
           <div>
             <div className="text-[15px] font-bold">항해 금지 시간대</div>
             <div className="mt-0.5 text-[12px] leading-relaxed text-orbit-dim">
-              이 시간엔 공부 세션도 공격도 못 합니다. 주말·공휴일은 자동으로 빠집니다.
+              설정된 시간 동안에는 공부 세션과 공격이 제한됩니다. 주말과 공휴일에는 적용되지 않습니다.
             </div>
           </div>
           <button
