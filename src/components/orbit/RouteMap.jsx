@@ -1792,19 +1792,30 @@ export function RouteMap({ fleet, missiles = [], photos = {} }) {
 }
 
 /** 내 함선을 크게 보여주는 카드. HUD 맨 위에 온다. */
-export function ShipHero({ ship, isStudying }) {
+export function ShipHero({ ship, isStudying, launching = false }) {
   const energy = Math.max(0, ship.energyBalance ?? 0)
   const speed = speedOf(energy)
 
   return (
     <div className="panel panel-cyan relative flex flex-col items-center overflow-hidden py-5">
-      <Spaceship
-        status={ship.status}
-        isStudying={isStudying}
-        shields={ship.shields ?? 0}
-        energy={energy}
-        size={150}
-      />
+      {/* 발사 연출 중엔 함선이 이 자리를 떠나 오버레이로 날아간다(layoutId 공유).
+          자리가 꺼지지 않게 같은 높이만 비워 둔다. */}
+      {launching ? (
+        <div style={{ height: 150 }} />
+      ) : (
+        <motion.div
+          layoutId="my-ship-transit"
+          transition={{ layout: { duration: 0.5, ease: [0.3, 0, 0.2, 1] } }}
+        >
+          <Spaceship
+            status={ship.status}
+            isStudying={isStudying}
+            shields={ship.shields ?? 0}
+            energy={energy}
+            size={150}
+          />
+        </motion.div>
+      )}
       {/* 거리·속도·순위를 같은 크기·같은 파란색으로 나란히 둔다. 예전엔 순위만
           아래에 작은 회색 글씨로 따로 적혀 있어서 곁다리처럼 보였는데, 셋 다
           "내가 지금 어떤 상태인가"를 말하는 같은 급의 숫자다.

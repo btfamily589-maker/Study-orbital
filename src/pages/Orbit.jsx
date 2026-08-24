@@ -150,10 +150,11 @@ export const LAUNCH_MS = 1650
 function LaunchOverlay() {
   return (
     <motion.div
-      className="pointer-events-none fixed inset-0 z-50 overflow-hidden bg-[#05070f]"
-      initial={{ opacity: 1 }}
-      animate={{ opacity: 0 }}
-      transition={{ delay: 1.2, duration: 0.42 }}
+      className="pointer-events-none fixed inset-0 z-50 overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 1, 1, 0] }}
+      transition={{ duration: LAUNCH_MS / 1000, times: [0, 0.14, 0.8, 1], ease: 'linear' }}
+      style={{ background: '#05070f' }}
     >
       {/* 워프 광선 — 아래에서 위로 가속 */}
       {Array.from({ length: 16 }, (_, i) => (
@@ -176,13 +177,19 @@ function LaunchOverlay() {
         />
       ))}
 
+      {/* 홈 계기판의 함선이 layoutId를 타고 이 자리(중앙)로 날아온다.
+          연출이 끝나면 다시 layoutId를 타고 공부 화면 계기 속으로 들어간다. */}
       <div className="grid h-full place-items-center">
         <motion.div
-          initial={{ y: 150, scale: 0.8, opacity: 0.6 }}
-          animate={{ y: -46, scale: 1.04, opacity: 1 }}
-          transition={{ duration: 1.35, ease: [0.32, 0, 0.15, 1] }}
+          layoutId="my-ship-transit"
+          transition={{ layout: { duration: 0.5, ease: [0.3, 0, 0.2, 1] } }}
         >
-          <Spaceship status="normal" isStudying size={150} />
+          <motion.div
+            animate={{ scale: [1, 1.12, 1.12], y: [0, -10, -14] }}
+            transition={{ duration: LAUNCH_MS / 1000, times: [0, 0.4, 1] }}
+          >
+            <Spaceship status="normal" isStudying size={150} />
+          </motion.div>
         </motion.div>
       </div>
 
@@ -1590,10 +1597,9 @@ export default function Orbit() {
     )
   }
 
-  if (session) {
+  if (session && !igniting) {
     return (
       <>
-        {igniting && <LaunchOverlay />}
         <StudySession
           session={session}
           ship={state.ship}
@@ -1661,7 +1667,7 @@ export default function Orbit() {
 
       {view === 'hud' && (
         <div className="space-y-4">
-          <ShipHero ship={state.ship} isStudying={false} />
+          <ShipHero ship={state.ship} isStudying={false} launching={igniting} />
           {/* 날아오는 게 있으면 함선 상태 바로 다음에 알린다 — 방어막을 살지
               말지가 여기서 갈린다. 없으면 아무것도 안 그린다. */}
           <IncomingMissiles missiles={state.missiles} fleet={state.fleet} />

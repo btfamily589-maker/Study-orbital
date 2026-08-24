@@ -427,13 +427,18 @@ export function StudySession({
           </div>
         )}
 
-        <Spaceship
-          status={statusOf(energy)}
-          isStudying={energy > 0}
-          shields={shields}
-          energy={energy}
-          size={140}
-        />
+        <motion.div
+          layoutId="my-ship-transit"
+          transition={{ layout: { duration: 0.55, ease: [0.3, 0, 0.2, 1] } }}
+        >
+          <Spaceship
+            status={statusOf(energy)}
+            isStudying={energy > 0}
+            shields={shields}
+            energy={energy}
+            size={140}
+          />
+        </motion.div>
 
         {/* 앞뒤 사람과의 격차 */}
         {(neighbours.ahead || neighbours.behind) && (
