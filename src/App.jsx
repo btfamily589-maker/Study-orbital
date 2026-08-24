@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Settings } from 'lucide-react'
 import AuthGate from './components/AuthGate'
 import RoomGate from './components/RoomGate'
 import Orbit from './pages/Orbit'
@@ -7,12 +8,7 @@ import { Starfield } from './components/orbit/Starfield'
 import { OrbitButton } from './components/OrbitButton'
 import { Sheet } from './components/ui'
 import { createRoom, joinRoom, leaveRoom, setMyPhoto, switchRoom } from './lib/rooms'
-import {
-  enablePush,
-  ensurePushRegistered,
-  isPushRegistered,
-  listenForegroundMessages,
-} from './lib/push'
+import { ensurePushRegistered, isPushRegistered, listenForegroundMessages } from './lib/push'
 import { compressProfilePhoto } from './lib/photo'
 import { logout } from './lib/firebase'
 
@@ -35,12 +31,18 @@ export default function App() {
 function Main({ me, refresh }) {
   const [roomOpen, setRoomOpen] = useState(false)
 
-  /* 알림은 기본으로 켠다 — 앱이 뜨고 잠깐 뒤 권한을 묻고 조용히 등록한다.
-   * (이미 허락된 기기는 창 없이 토큰만 갱신된다.) */
+  /* 알림은 무조건 켠다 — 앱이 뜨고 잠깐 뒤, 그리고 첫 터치 때 한 번 더
+   * 권한을 묻고 조용히 등록한다. iOS(PWA)는 터치 없이 권한 창을 안 띄워서
+   * 첫 터치 쪽이 실제로 잡아 준다. 이미 허락된 기기는 창 없이 토큰만 갱신. */
   useEffect(() => {
     listenForegroundMessages()
     const t = setTimeout(() => ensurePushRegistered(), 3000)
-    return () => clearTimeout(t)
+    const once = () => ensurePushRegistered()
+    window.addEventListener('pointerdown', once, { once: true })
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener('pointerdown', once)
+    }
   }, [])
   const [adminOpen, setAdminOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
@@ -56,21 +58,25 @@ function Main({ me, refresh }) {
         <div className="neon text-[18px] leading-none font-bold tracking-widest text-orbit-cyan">
           STUDY ORBITAL
         </div>
-        {/* 현재 방 이름 | 방 전환. 이름을 누르면 방 정보, ⇄를 누르면 내 방 목록. */}
+        {/* 현재 방 이름+설정 | ⇄ 방 전환. 이름을 누르면 방 정보, 오른쪽은 내 방 목록. */}
         <div className="flex min-w-0 items-center overflow-hidden rounded-full border border-white/15 bg-white/5">
           <button
             onClick={() => setRoomOpen(true)}
-            className="min-w-0 py-1.5 pr-2.5 pl-3 text-[13px] font-semibold text-orbit-text"
+            className="flex min-w-0 items-center gap-1.5 py-1.5 pr-2.5 pl-3 text-[13px] font-semibold text-orbit-text"
           >
-            <span className="block max-w-[7.5rem] truncate">{me.room.name}</span>
+            <span className="max-w-[6.5rem] truncate">{me.room.name}</span>
+            <Settings
+              className="h-3.5 w-3.5 shrink-0 text-orbit-cyan"
+              style={{ filter: 'drop-shadow(0 0 4px rgba(0,212,255,0.9))' }}
+            />
           </button>
           <span className="h-4 w-px shrink-0 bg-white/20" />
           <button
             onClick={() => setSwitchOpen(true)}
-            aria-label="방 전환"
-            className="py-1.5 pr-3 pl-2.5 text-[14px] font-bold text-orbit-cyan"
+            className="flex shrink-0 items-center gap-1 py-1.5 pr-3 pl-2.5 text-[12px] font-bold text-orbit-cyan"
           >
-            ⇄
+            <span className="text-[14px] leading-none">⇄</span>
+            <span>방 전환</span>
           </button>
         </div>
       </header>
@@ -373,12 +379,11 @@ function PhotoRow({ me, refresh }) {
   )
 }
 
-/* 알림 줄 — 미사일 발사·착탄 푸시를 이 기기로 받을지. iPhone은 홈 화면에
- * 추가한 PWA에서만 켤 수 있다(사파리 탭에서는 권한 창이 안 뜬다). */
+/* 알림 줄 — 상태 표시만 한다. 켜는 버튼은 없다: 앱이 알아서 권한을 묻고
+ * 등록한다(App의 ensurePushRegistered). 여기서는 이 기기가 실제로 받는
+ * 상태인지만 보여준다. */
 function PushRow() {
   const [on, setOn] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState(null)
 
   useEffect(() => {
     isPushRegistered().then(setOn)
@@ -391,31 +396,12 @@ function PushRow() {
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-[14px] font-semibold">미사일 알림</div>
-        <div className="text-[12px] text-orbit-dim">
-          {on ? '이 기기로 발사·착탄 알림이 옵니다' : '발사·착탄을 푸시로 알려줍니다'}
+        <div className="text-[12px] leading-relaxed text-orbit-dim">
+          {on
+            ? '이 기기로 발사·착탄 알림이 옵니다'
+            : '알림 권한을 허용하면 자동으로 켜집니다. iPhone은 홈 화면에 추가한 앱에서 열어 주세요.'}
         </div>
-        {err && <div className="mt-0.5 text-[12px] leading-relaxed text-orbit-red">{err}</div>}
       </div>
-      {!on && (
-        <button
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true)
-            setErr(null)
-            try {
-              await enablePush()
-              setOn(true)
-            } catch (e) {
-              setErr(e.message)
-            } finally {
-              setBusy(false)
-            }
-          }}
-          className="shrink-0 rounded-lg bg-orbit-cyan/15 px-3 py-2 text-[13px] font-bold text-orbit-cyan disabled:opacity-40"
-        >
-          {busy ? '켜는 중…' : '알림 켜기'}
-        </button>
-      )}
     </div>
   )
 }

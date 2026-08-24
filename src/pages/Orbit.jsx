@@ -254,7 +254,7 @@ function EngineStart({ noFlyZone, onStart }) {
   return (
     <div className="panel space-y-3 p-5">
       {noFlyZone && (
-        <p className="text-[15px] leading-relaxed text-orbit-amber">
+        <p className="text-[15px] leading-relaxed font-bold text-orbit-amber">
           항해 금지 시간대입니다(평일 수업시간).
         </p>
       )}
@@ -1728,12 +1728,6 @@ export default function Orbit() {
               </button>
             ))}
           </Fading>
-
-          {state.status.noFlyZone && (
-            <p className="rounded-control border border-orbit-amber/30 bg-orbit-amber/10 px-3.5 py-2.5 text-[13px] leading-relaxed text-orbit-amber">
-              항해 금지 시간대 — 평일 수업시간엔 세션을 시작하거나 공격할 수 없습니다.
-            </p>
-          )}
 
           {view === 'hud' && (
             <div className="space-y-4">
