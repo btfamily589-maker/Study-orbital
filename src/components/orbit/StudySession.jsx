@@ -429,7 +429,7 @@ export function StudySession({
 
         <motion.div
           layoutId="my-ship-transit"
-          transition={{ layout: { duration: 0.55, ease: [0.3, 0, 0.2, 1] } }}
+          transition={{ layout: { duration: 1.05, ease: [0.3, 0, 0.2, 1] } }}
         >
           <Spaceship
             status={statusOf(energy)}

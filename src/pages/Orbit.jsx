@@ -145,7 +145,7 @@ function JoinCard({ onJoined }) {
 /* 공부 시작을 누르면 잠깐 뜨는 발사 연출. 함선이 워프 광선을 뚫고 솟아오른 뒤
  * 스스로 어두워지며 공부 화면을 드러낸다. 실제 세션은 이미 서버에서 돌기 시작한
  * 뒤라, 이 화면은 순수하게 눈맛이다. */
-export const LAUNCH_MS = 1650
+export const LAUNCH_MS = 2400
 
 function LaunchOverlay() {
   return (
@@ -182,7 +182,7 @@ function LaunchOverlay() {
       <div className="grid h-full place-items-center">
         <motion.div
           layoutId="my-ship-transit"
-          transition={{ layout: { duration: 0.5, ease: [0.3, 0, 0.2, 1] } }}
+          transition={{ layout: { duration: 1.0, ease: [0.3, 0, 0.2, 1] } }}
         >
           <motion.div
             animate={{ scale: [1, 1.12, 1.12], y: [0, -10, -14] }}
