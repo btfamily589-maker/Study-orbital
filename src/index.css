@@ -89,6 +89,12 @@ body {
 
 button {
   font-family: inherit;
+  /* iOS처럼 누르는 동안 살짝 줄었다가 떼면 돌아온다. transform이 아니라
+     scale 속성이라 translate를 쓰는 버튼과도 안 부딪힌다. */
+  transition: scale 0.16s ease;
+}
+button:active:not(:disabled) {
+  scale: 0.96;
 }
 
 input,

@@ -54,7 +54,7 @@ function SlideToStop({ onStop }) {
   return (
     <div
       ref={trackRef}
-      className="relative h-14 w-full max-w-xs overflow-hidden rounded-full border border-orbit-cyan/40 bg-orbit-cyan/10"
+      className="relative h-14 w-full max-w-xs lg:max-w-md overflow-hidden rounded-full border border-orbit-cyan/40 bg-orbit-cyan/10"
       style={{ boxShadow: '0 0 30px rgba(0,212,255,0.18)' }}
     >
       <motion.div
@@ -174,7 +174,7 @@ function StatusPanel({ energy, speed, shields, gainedEnergy, gainedDistance }) {
 
   return (
     <div
-      className="w-full max-w-xs rounded-control border-2 border-orbit-cyan/45 bg-black/70 py-4"
+      className="w-full max-w-xs lg:max-w-md rounded-control border-2 border-orbit-cyan/45 bg-black/70 py-4"
       style={{ boxShadow: '0 0 14px rgba(0,212,255,0.18)' }}
     >
       {/* 지금 상태. 속도는 에너지에서 나온다 — 두 칸이 같은 색으로 움직인다. */}
@@ -319,7 +319,7 @@ export function StudySession({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-full max-w-xs rounded-control border border-orbit-amber/40 bg-orbit-amber/10 p-3 text-center"
+              className="w-full max-w-xs lg:max-w-md rounded-control border border-orbit-amber/40 bg-orbit-amber/10 p-3 text-center"
             >
               <div className="flex items-center justify-center gap-2">
                 <Zap className="h-4 w-4 text-orbit-amber" />
@@ -334,7 +334,7 @@ export function StudySession({
           <div className="text-center">
             {/* 라벨은 뺐다. 큰 숫자가 00:42:31 모양이면 시계라는 건 보면 안다. */}
             <div
-              className="code text-[46px] leading-none tracking-wider text-orbit-text"
+              className="code text-[46px] leading-none tracking-wider lg:text-[64px] text-orbit-text"
               style={{
                 textShadow: '0 0 30px rgba(0,212,255,0.5)',
               }}
@@ -347,7 +347,7 @@ export function StudySession({
             통보라, 30분 전부터 띄운다. */}
           {(nearingCap || overlong) && (
             <div
-              className={`w-full max-w-xs rounded-control border px-3 py-2.5 text-center text-[13px] leading-relaxed ${
+              className={`w-full max-w-xs lg:max-w-md rounded-control border px-3 py-2.5 text-center text-[13px] leading-relaxed ${
                 overlong
                   ? 'border-orbit-amber/40 bg-orbit-amber/10 text-orbit-amber'
                   : 'border-white/15 bg-white/5 text-orbit-dim'
@@ -398,7 +398,7 @@ export function StudySession({
         >
           {/* 앞뒤 사람과의 격차 */}
           {(neighbours.ahead || neighbours.behind) && (
-            <div className="flex w-full max-w-xs items-center justify-between text-[14px]">
+            <div className="flex w-full max-w-xs lg:max-w-md items-center justify-between text-[14px]">
               {neighbours.ahead ? (
                 <div className="flex items-center gap-1.5">
                   <span className="text-orbit-dim">▲</span>
@@ -432,7 +432,7 @@ export function StudySession({
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full max-w-xs space-y-3"
+              className="w-full max-w-xs lg:max-w-md space-y-3"
             >
               {error && <p className="text-center text-[14px] text-orbit-red">{error}</p>}
               <div className="flex gap-3">
