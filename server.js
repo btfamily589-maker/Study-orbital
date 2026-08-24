@@ -64,15 +64,17 @@ let messagingCached = null
 function adminMessaging() {
   return messagingCached
 }
+let FieldValue = null // firebase-admin/firestore의 arrayUnion/arrayRemove
 
 async function ensureAdmin() {
   const appRef = await firebaseAdmin()
   if (!appRef) return false
   if (!dbCached) {
-    const { getFirestore } = await import('firebase-admin/firestore')
+    const fs = await import('firebase-admin/firestore')
     const { getAuth } = await import('firebase-admin/auth')
     const { getMessaging } = await import('firebase-admin/messaging')
-    dbCached = getFirestore(appRef)
+    FieldValue = fs.FieldValue
+    dbCached = fs.getFirestore(appRef)
     authCached = getAuth(appRef)
     messagingCached = getMessaging(appRef)
   }
@@ -136,6 +138,7 @@ app.post('/api/signup', async (req, res) => {
       tx.set(db().doc(`users/${uid}`), {
         name: cred.name,
         roomId: null,
+        roomIds: [],
         createdAt: new Date().toISOString(),
       })
       return false
@@ -203,23 +206,37 @@ const newCode = () =>
     .map((b) => CODE_CHARS[b % CODE_CHARS.length])
     .join('')
 
-/** 내 정보 + 지금 들어가 있는 방. 첫 화면이 이걸로 어디를 보여줄지 정한다. */
+/** 내 정보 + 내 방 전부. 한 사람이 방 여러 개에 들어가 있을 수 있다 —
+ * roomId가 지금 보고 있는 방, roomIds가 내가 속한 방 전부다. */
 app.get('/api/me', requireUser, async (req, res) => {
-  let room = null
-  if (req.user.roomId) {
-    const snap = await db().doc(`rooms/${req.user.roomId}`).get()
-    if (snap.exists) {
-      const membersSnap = await db().collection(`rooms/${req.user.roomId}/members`).get()
-      room = {
-        id: snap.id,
-        name: snap.data().name,
-        code: snap.data().code,
-        memberCount: membersSnap.size,
-        isOwner: snap.data().ownerUid === req.user.uid,
-      }
-    }
+  const ids = [
+    ...new Set([...(req.user.roomIds ?? []), ...(req.user.roomId ? [req.user.roomId] : [])]),
+  ]
+  /* roomIds가 생기기 전 계정은 roomId만 있다 — 지나가는 길에 채워 둔다. */
+  if (req.user.roomId && !(req.user.roomIds ?? []).includes(req.user.roomId)) {
+    await db()
+      .doc(`users/${req.user.uid}`)
+      .update({ roomIds: ids })
+      .catch(() => {})
   }
-  res.json({ uid: req.user.uid, name: req.user.name, photo: req.user.photo ?? null, room })
+
+  const snaps = await Promise.all(ids.map((id) => db().doc(`rooms/${id}`).get()))
+  const rooms = snaps
+    .filter((s) => s.exists)
+    .map((s) => ({
+      id: s.id,
+      name: s.data().name,
+      code: s.data().code,
+      isOwner: s.data().ownerUid === req.user.uid,
+    }))
+
+  let room = null
+  const cur = rooms.find((r) => r.id === req.user.roomId)
+  if (cur) {
+    const membersSnap = await db().collection(`rooms/${req.user.roomId}/members`).get()
+    room = { ...cur, memberCount: membersSnap.size }
+  }
+  res.json({ uid: req.user.uid, name: req.user.name, photo: req.user.photo ?? null, room, rooms })
 })
 
 /* ---------------- 프사 ---------------- */
@@ -293,7 +310,10 @@ app.post('/api/room/create', requireUser, async (req, res) => {
           joinedAt: new Date().toISOString(),
           ...(req.user.photo ? { photo: req.user.photo } : {}),
         })
-        tx.update(db().doc(`users/${req.user.uid}`), { roomId: roomRef.id })
+        tx.update(db().doc(`users/${req.user.uid}`), {
+          roomId: roomRef.id,
+          roomIds: FieldValue.arrayUnion(roomRef.id),
+        })
         return { id: roomRef.id, code }
       })
     }
@@ -335,7 +355,9 @@ app.post('/api/room/join', requireUser, async (req, res) => {
         // 처음 참가면 mergeFields 대상 문서가 없어 실패할 수 있다 — 통째로 만든다.
         await db().doc(`rooms/${roomId}/members/${req.user.uid}`).set(member)
       })
-    await db().doc(`users/${req.user.uid}`).update({ roomId })
+    await db()
+      .doc(`users/${req.user.uid}`)
+      .update({ roomId, roomIds: FieldValue.arrayUnion(roomId) })
     res.json({ ok: true, roomId, name: roomSnap.data().name })
   } catch (e) {
     console.error('[room/join]', e)
@@ -343,14 +365,38 @@ app.post('/api/room/join', requireUser, async (req, res) => {
   }
 })
 
-/** 방 나가기. 명부와 배는 남긴다 — 코드로 돌아오면 이어서 한다. */
+/** 지금 방 나가기. 명부와 배는 남긴다 — 코드로 돌아오면 이어서 한다.
+ * 다른 방에도 들어가 있으면 그중 하나로 옮겨 탄다. */
 app.post('/api/room/leave', requireUser, async (req, res) => {
   try {
-    await db().doc(`users/${req.user.uid}`).update({ roomId: null })
-    res.json({ ok: true })
+    const cur = req.user.roomId
+    const remaining = (req.user.roomIds ?? []).filter((id) => id !== cur)
+    await db()
+      .doc(`users/${req.user.uid}`)
+      .update({
+        roomId: remaining[0] ?? null,
+        ...(cur ? { roomIds: FieldValue.arrayRemove(cur) } : {}),
+      })
+    res.json({ ok: true, roomId: remaining[0] ?? null })
   } catch (e) {
     console.error('[room/leave]', e)
     res.status(502).json({ error: '방을 나가지 못했습니다.' })
+  }
+})
+
+/** 내 방 사이 전환. 목록(roomIds)에 있는 방으로만 옮겨 탈 수 있다. */
+app.post('/api/room/switch', requireUser, async (req, res) => {
+  const roomId = String(req.body?.roomId ?? '')
+  const mine = (req.user.roomIds ?? []).includes(roomId) || req.user.roomId === roomId
+  if (!roomId || !mine) return res.status(403).json({ error: '내가 들어가 있는 방이 아닙니다.' })
+  try {
+    const snap = await db().doc(`rooms/${roomId}`).get()
+    if (!snap.exists) return res.status(404).json({ error: '없어진 방입니다.' })
+    await db().doc(`users/${req.user.uid}`).update({ roomId })
+    res.json({ ok: true })
+  } catch (e) {
+    console.error('[room/switch]', e)
+    res.status(502).json({ error: '방을 바꾸지 못했습니다.' })
   }
 })
 
@@ -364,11 +410,13 @@ app.post('/api/push/register', requireUser, async (req, res) => {
     return res.status(400).json({ error: '토큰이 올바르지 않습니다.' })
   }
   try {
-    await db().doc(`pushTokens/${token}`).set({
-      uid: req.user.uid,
-      ua: String(req.headers['user-agent'] ?? '').slice(0, 120),
-      updatedAt: new Date().toISOString(),
-    })
+    await db()
+      .doc(`pushTokens/${token}`)
+      .set({
+        uid: req.user.uid,
+        ua: String(req.headers['user-agent'] ?? '').slice(0, 120),
+        updatedAt: new Date().toISOString(),
+      })
     res.json({ ok: true })
   } catch (e) {
     console.error('[push/register]', e)

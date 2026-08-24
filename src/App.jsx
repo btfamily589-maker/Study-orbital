@@ -6,7 +6,7 @@ import OrbitAdmin from './components/OrbitAdmin'
 import { Starfield } from './components/orbit/Starfield'
 import { OrbitButton } from './components/OrbitButton'
 import { Sheet } from './components/ui'
-import { leaveRoom, setMyPhoto } from './lib/rooms'
+import { createRoom, joinRoom, leaveRoom, setMyPhoto, switchRoom } from './lib/rooms'
 import { enablePush, isPushRegistered, listenForegroundMessages, syncPushToken } from './lib/push'
 import { compressProfilePhoto } from './lib/photo'
 import { logout } from './lib/firebase'
@@ -37,6 +37,7 @@ function Main({ me, refresh }) {
     syncPushToken()
   }, [])
   const [adminOpen, setAdminOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
   return (
@@ -58,7 +59,8 @@ function Main({ me, refresh }) {
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-xl flex-1 px-4 pb-10">
-        <Orbit />
+        {/* 방을 바꾸면 다른 항로다 — key로 통째로 새로 띄운다. */}
+        <Orbit key={me.room.id} />
       </main>
 
       <Sheet dark center open={roomOpen} onClose={() => setRoomOpen(false)} title={me.room.name}>
@@ -78,6 +80,18 @@ function Main({ me, refresh }) {
 
           <PushRow />
 
+          <MyRooms
+            me={me}
+            onSwitched={async () => {
+              setRoomOpen(false)
+              await refresh()
+            }}
+            onAdd={() => {
+              setRoomOpen(false)
+              setAddOpen(true)
+            }}
+          />
+
           {me.room.isOwner && (
             <OrbitButton
               className="w-full"
@@ -94,7 +108,9 @@ function Main({ me, refresh }) {
             className="w-full"
             disabled={busy}
             onClick={async () => {
-              if (!confirm('방을 나갈까요?\n배와 기록은 남습니다 — 코드로 돌아오면 이어서 합니다.'))
+              if (
+                !confirm('이 방을 나갈까요?\n배와 기록은 남습니다 — 코드로 돌아오면 이어서 합니다.')
+              )
                 return
               setBusy(true)
               try {
@@ -106,7 +122,7 @@ function Main({ me, refresh }) {
               }
             }}
           >
-            방 나가기
+            이 방 나가기
           </OrbitButton>
           <OrbitButton variant="danger" className="w-full" onClick={logout}>
             로그아웃
@@ -117,7 +133,155 @@ function Main({ me, refresh }) {
       <Sheet dark full open={adminOpen} onClose={() => setAdminOpen(false)} title="방장 설정">
         {adminOpen && <OrbitAdmin />}
       </Sheet>
+
+      <Sheet dark center open={addOpen} onClose={() => setAddOpen(false)} title="방 추가">
+        {addOpen && (
+          <AddRoom
+            onDone={async () => {
+              setAddOpen(false)
+              await refresh()
+            }}
+          />
+        )}
+      </Sheet>
     </>
+  )
+}
+
+/* 내 방 목록 — 여러 방을 오간다. 지금 방은 표시만 하고, 다른 방은 누르면
+ * 그 항로로 옮겨 탄다. 배·기록은 방마다 따로 산다. */
+function MyRooms({ me, onSwitched, onAdd }) {
+  const [busy, setBusy] = useState(null)
+  const [err, setErr] = useState(null)
+  const others = (me.rooms ?? []).filter((r) => r.id !== me.room.id)
+
+  return (
+    <div className="rounded-xl border border-white/12 bg-white/5 p-3">
+      <div className="flex items-baseline justify-between px-1">
+        <span className="text-[14px] font-semibold">내 방</span>
+        <button onClick={onAdd} className="text-[13px] font-bold text-orbit-cyan">
+          + 방 추가
+        </button>
+      </div>
+      {err && <p className="mt-1 px-1 text-[12px] text-orbit-red">{err}</p>}
+      <div className="mt-1 divide-y divide-white/10">
+        <div className="flex items-center gap-2 py-2.5">
+          <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
+            {me.room.name}
+            {me.room.isOwner && <span className="ml-1.5 text-[11px] text-orbit-cyan">방장</span>}
+          </span>
+          <span className="shrink-0 text-[12px] text-orbit-dim">지금 방</span>
+        </div>
+        {others.map((r) => (
+          <div key={r.id} className="flex items-center gap-2 py-2.5">
+            <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
+              {r.name}
+              {r.isOwner && <span className="ml-1.5 text-[11px] text-orbit-cyan">방장</span>}
+            </span>
+            <button
+              disabled={busy === r.id}
+              onClick={async () => {
+                setBusy(r.id)
+                setErr(null)
+                try {
+                  await switchRoom(r.id)
+                  await onSwitched()
+                } catch (e) {
+                  setErr(e.message)
+                } finally {
+                  setBusy(null)
+                }
+              }}
+              className="shrink-0 rounded-lg bg-orbit-cyan/15 px-3 py-1.5 text-[13px] font-bold text-orbit-cyan disabled:opacity-40"
+            >
+              {busy === r.id ? '이동 중…' : '이동'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* 방 추가 — 초대코드로 참가하거나 새로 만든다. RoomGate의 첫 화면과 같은 일이지만
+ * 이미 방에 들어와 있는 상태에서 하나 더 얹는 것. */
+function AddRoom({ onDone }) {
+  const [mode, setMode] = useState('join') // 'join' | 'create'
+  const [code, setCode] = useState('')
+  const [roomName, setRoomName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+
+  const input =
+    'w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3.5 text-[16px] text-orbit-text placeholder:text-orbit-dim/40 focus:border-orbit-cyan focus:outline-none'
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
+        {[
+          ['join', '초대코드로 참가'],
+          ['create', '새 방 만들기'],
+        ].map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => {
+              setMode(id)
+              setErr(null)
+            }}
+            className={`flex-1 rounded-lg py-2.5 text-[14px] font-bold transition ${
+              mode === id ? 'bg-orbit-cyan/15 text-orbit-cyan' : 'text-orbit-dim'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'join' ? (
+        <input
+          className={`${input} code text-center text-[22px] tracking-[0.35em] uppercase`}
+          placeholder="초대코드"
+          value={code}
+          maxLength={6}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+        />
+      ) : (
+        <input
+          className={input}
+          placeholder="방 이름"
+          value={roomName}
+          maxLength={20}
+          onChange={(e) => setRoomName(e.target.value)}
+        />
+      )}
+
+      {err && <p className="text-[13px] text-orbit-red">{err}</p>}
+
+      <OrbitButton
+        className="w-full"
+        disabled={busy}
+        onClick={async () => {
+          setErr(null)
+          setBusy(true)
+          try {
+            if (mode === 'create') {
+              if (!roomName.trim()) throw new Error('방 이름을 입력하세요.')
+              await createRoom(roomName.trim())
+            } else {
+              if (!code.trim()) throw new Error('초대코드를 입력하세요.')
+              await joinRoom(code.trim())
+            }
+            await onDone()
+          } catch (e) {
+            setErr(e.message)
+          } finally {
+            setBusy(false)
+          }
+        }}
+      >
+        {busy ? '진입 중…' : mode === 'create' ? '방 만들고 출항' : '방에 들어가기'}
+      </OrbitButton>
+    </div>
   )
 }
 
