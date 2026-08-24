@@ -54,9 +54,6 @@ function Main({ me, refresh }) {
             <div className="code mt-1 text-[30px] font-bold tracking-[0.3em] text-orbit-cyan">
               {me.room.code}
             </div>
-            <p className="mt-1 text-[12px] text-orbit-dim">
-              친구가 이 코드로 들어오면 같은 항로에서 경쟁합니다
-            </p>
           </div>
 
           <div className="text-center text-[13px] text-orbit-dim">
