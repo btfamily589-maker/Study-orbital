@@ -196,11 +196,11 @@ function LaunchOverlay() {
       <div className="grid h-full place-items-center">
         <motion.div
           layoutId="my-ship-transit"
-          transition={{ layout: { duration: 1.0, ease: [0.3, 0, 0.2, 1] } }}
+          transition={{ layout: { type: 'tween', duration: 1.0, ease: [0.3, 0, 0.2, 1] } }}
         >
           <motion.div
-            animate={{ scale: [1, 1.12, 1.12], y: [0, -10, -14] }}
-            transition={{ duration: LAUNCH_MS / 1000, times: [0, 0.4, 1] }}
+            animate={{ scale: [1, 1.1, 1.1, 1], y: [0, -12, -12, 0] }}
+            transition={{ duration: LAUNCH_MS / 1000, times: [0, 0.35, 0.72, 0.95] }}
           >
             <Spaceship status="normal" isStudying size={150} />
           </motion.div>

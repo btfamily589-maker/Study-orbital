@@ -321,7 +321,22 @@ export function StudySession({
   return (
     <div className="relative -mx-5 min-h-[calc(100vh-12rem)] overflow-hidden px-5 pt-6 pb-12">
       <Stars />
-      {speed > 0 && !finishing && <WarpStreaks speed={speed} />}
+      {/* 정지하면 워프가 뚝 꺼지지 않고 1초쯤에 걸쳐 잦아든다 — 배도 배경도
+          같이 멈추는 느낌을 준다. 재개하면 다시 차오른다. */}
+      <AnimatePresence>
+        {speed > 0 && !finishing && (
+          <motion.div
+            key="warp"
+            className="pointer-events-none absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.0, ease: 'easeOut' }}
+          >
+            <WarpStreaks speed={speed} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 요소 사이 간격(gap-7)과 화면 위아래 여백을 넉넉히 잡는다. 시계·배·수치·
           정지 버튼이 서로 붙어 있으면 계기판이 아니라 목록처럼 보인다. */}
@@ -397,7 +412,7 @@ export function StudySession({
 
         <motion.div
           layoutId="my-ship-transit"
-          transition={{ layout: { duration: 1.05, ease: [0.3, 0, 0.2, 1] } }}
+          transition={{ layout: { type: 'tween', duration: 1.05, ease: [0.3, 0, 0.2, 1] } }}
         >
           <Spaceship
             status={statusOf(energy)}

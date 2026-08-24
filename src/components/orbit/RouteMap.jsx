@@ -1805,7 +1805,7 @@ export function ShipHero({ ship, isStudying, launching = false }) {
       ) : (
         <motion.div
           layoutId="my-ship-transit"
-          transition={{ layout: { duration: 1.0, ease: [0.3, 0, 0.2, 1] } }}
+          transition={{ layout: { type: 'tween', duration: 1.0, ease: [0.3, 0, 0.2, 1] } }}
         >
           <Spaceship
             status={ship.status}
