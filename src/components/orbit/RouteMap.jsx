@@ -613,24 +613,24 @@ function ShipGlyph({
         {photo && (
           <>
             <clipPath id={`avatar-${gradId}`}>
-              <circle cx={x - 15} cy={y - 11} r={7} />
+              <circle cx={x - 18} cy={y - 14} r={10} />
             </clipPath>
             <image
               href={photo}
-              x={x - 22}
-              y={y - 18}
-              width={14}
-              height={14}
+              x={x - 28}
+              y={y - 24}
+              width={20}
+              height={20}
               clipPath={`url(#avatar-${gradId})`}
               preserveAspectRatio="xMidYMid slice"
             />
             <circle
-              cx={x - 15}
-              cy={y - 11}
-              r={7}
+              cx={x - 18}
+              cy={y - 14}
+              r={10}
               fill="none"
               stroke={isMe ? '#00d4ff' : 'rgba(255,255,255,0.75)'}
-              strokeWidth={1}
+              strokeWidth={1.2}
             />
           </>
         )}
