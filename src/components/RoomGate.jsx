@@ -76,9 +76,7 @@ function RoomPicker({ onDone }) {
       <h1 className="neon text-center text-[26px] font-bold tracking-widest text-orbit-cyan">
         STUDY ORBITAL
       </h1>
-      <p className="mt-2 mb-8 text-center text-[14px] leading-relaxed text-orbit-dim">
-        친구들과 같은 방에 있어야 같은 맵에서 경쟁합니다.
-      </p>
+      <div className="mb-8" />
 
       <div className="w-full max-w-sm space-y-3">
         <div className="flex gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
