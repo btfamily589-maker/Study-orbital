@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Bell, BellOff, Users } from 'lucide-react'
+import { Bell, BellOff, Settings, Users } from 'lucide-react'
 import AuthGate from './components/AuthGate'
 import RoomGate from './components/RoomGate'
 import Orbit from './pages/Orbit'
@@ -73,18 +73,33 @@ function Main({ me, refresh }) {
         <Orbit key={me.room.id} />
       </main>
 
-      {/* 하단 중앙 그룹 버튼 — 참여하는 팀 목록을 연다. */}
-      <button
-        onClick={() => setSwitchOpen(true)}
-        aria-label="그룹"
-        className="fixed bottom-6 left-1/2 z-40 grid h-14 w-14 -translate-x-1/2 place-items-center rounded-full border border-orbit-cyan/50 bg-[#0a1226]/90 backdrop-blur transition active:scale-95"
+      {/* 하단 중앙 알약 — 왼쪽 그룹(팀 목록) | 오른쪽 설정(방 정보). */}
+      <div
+        className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center overflow-hidden rounded-full border border-orbit-cyan/50 bg-[#0a1226]/90 backdrop-blur"
         style={{ boxShadow: '0 0 18px rgba(0,212,255,0.35), inset 0 0 12px rgba(0,212,255,0.12)' }}
       >
-        <Users
-          className="h-6 w-6 text-orbit-cyan"
-          style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,255,0.95))' }}
-        />
-      </button>
+        <button
+          onClick={() => setSwitchOpen(true)}
+          aria-label="그룹"
+          className="grid h-14 w-14 place-items-center"
+        >
+          <Users
+            className="h-6 w-6 text-orbit-cyan"
+            style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,255,0.95))' }}
+          />
+        </button>
+        <span className="h-7 w-px shrink-0 bg-orbit-cyan/30" />
+        <button
+          onClick={() => setRoomOpen(true)}
+          aria-label="설정"
+          className="grid h-14 w-14 place-items-center"
+        >
+          <Settings
+            className="h-6 w-6 text-orbit-cyan"
+            style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,255,0.95))' }}
+          />
+        </button>
+      </div>
 
       <Sheet dark center open={roomOpen} onClose={() => setRoomOpen(false)} title={me.room.name}>
         <div className="space-y-4">
