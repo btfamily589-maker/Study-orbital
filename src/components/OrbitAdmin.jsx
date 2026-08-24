@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { getOrbitSettings, saveOrbitSettings, simulateOrbit, resetOrbit } from '../lib/orbit'
+import { getOrbitSettings, saveOrbitSettings, resetOrbit } from '../lib/orbit'
 import { OrbitButton } from './OrbitButton'
 
 /* 방장 설정 — Sevenly 설정의 Study Orbital 칸을 이 사이트 방장 몫으로 옮긴 것.
- * 항해 금지 시간대, 시뮬레이션, 전체 초기화.
+ * 항해 금지 시간대, 전체 초기화.
  * 서버 쪽 권한은 orbit admin 라우터가 본다(방 명부의 role === 'admin'). */
 export default function OrbitAdmin() {
   const [loading, setLoading] = useState(true)
@@ -115,29 +115,14 @@ export default function OrbitAdmin() {
         </OrbitButton>
       </section>
 
-      {/* 테스트·초기화 */}
+      {/* 초기화 */}
       <section className="space-y-3 rounded-xl border border-white/12 bg-white/5 p-4">
         <div>
-          <div className="text-[15px] font-bold">시뮬레이션</div>
+          <div className="text-[15px] font-bold">초기화</div>
           <div className="mt-0.5 text-[12px] leading-relaxed text-orbit-dim">
-            함선을 흩어놓고 미사일을 띄워 화면이 실제로 어떻게 보이는지 확인합니다. 기존 게임 상태는
-            덮어씁니다.
+            공부 기록·공격 기록을 지우고 모든 함선을 출발선으로 되돌립니다.
           </div>
         </div>
-        <OrbitButton
-          variant="ghost"
-          className="w-full"
-          disabled={busy === 'sim'}
-          onClick={() =>
-            run(
-              'sim',
-              simulateOrbit,
-              '지금 함선 상태와 기록을 덮어쓰고 테스트용 상황을 만듭니다. 계속할까요?',
-            )
-          }
-        >
-          {busy === 'sim' ? '만드는 중…' : '복잡한 상황 만들기'}
-        </OrbitButton>
         <OrbitButton
           variant="danger"
           className="w-full"
