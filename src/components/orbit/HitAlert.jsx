@@ -49,18 +49,19 @@ export function HitAlert() {
       if (!Array.isArray(log)) return
       if (seen.current === null) seen.current = new Set(loadSeen())
 
+      /* 앱을 켜고 나서 첫 조회분은 지난 기록이지 새 피격이 아니다 — 조용히
+       * 확인 처리한다. 피격이 없어도 priming은 해둬야, 그다음 조회에서 오는
+       * 진짜 새 피격이 삼켜지지 않는다. */
+      const first = !primed.current
+      primed.current = true
+
       const hits = log.filter((a) => a.isTarget && a.status === 'hit' && !seen.current.has(a.id))
       if (!hits.length) return
 
       for (const h of hits) seen.current.add(h.id)
       saveSeen([...seen.current])
 
-      /* 앱을 처음 켠 기기라면 지난 피격이 한꺼번에 뜬다 — 그건 알림이 아니라
-       * 지난 기록이므로 조용히 넘긴다. 다음 조회부터가 진짜 새 피격이다. */
-      if (!primed.current) {
-        primed.current = true
-        return
-      }
+      if (first) return
       // 오래된 것부터 차례로 보여준다.
       setQueue((q) => [...q, ...hits.sort((a, b) => a.impactAt - b.impactAt)])
     } catch {
@@ -98,11 +99,24 @@ export function HitAlert() {
           >
             {/* 붉은 경보가 두 번 크게 뛴다 — 소리 없이도 "맞았다"가 읽힌다. */}
             <motion.div
-              className="mx-auto grid h-16 w-16 place-items-center rounded-full border-2 border-orbit-red bg-orbit-red/15 text-[30px]"
+              className="mx-auto grid h-16 w-16 place-items-center rounded-full border-2 border-orbit-red bg-orbit-red/15"
               animate={{ scale: [1, 1.12, 1] }}
               transition={{ duration: 0.7, repeat: 2 }}
             >
-              💥
+              {/* 폭발 버스트 — 앱의 다른 계기들처럼 선 하나에 네온 발광. */}
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-9 w-9 text-orbit-red"
+                style={{ filter: 'drop-shadow(0 0 6px hsl(0 100% 60% / 0.9))' }}
+              >
+                <path d="M12 8.1l1.3 2.4 2.7.5-1.9 2 .3 2.8-2.4-1.2-2.4 1.2.3-2.8-1.9-2 2.7-.5z" />
+                <path d="M12 2.6v2.6M12 18.8v2.6M2.6 12h2.6M18.8 12h2.6M5.4 5.4l1.8 1.8M16.8 16.8l1.8 1.8M18.6 5.4l-1.8 1.8M7.2 16.8l-1.8 1.8" />
+              </svg>
             </motion.div>
 
             <h3 className="mt-4 text-[20px] font-bold text-orbit-red">피격</h3>
