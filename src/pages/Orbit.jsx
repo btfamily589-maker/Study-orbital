@@ -22,6 +22,7 @@ import { prettyDate, ymd } from '../lib/date'
 import { fetchRoomPhotos } from '../lib/rooms'
 import { IncomingMissiles, RouteMap, ShieldDomeIcon, ShipHero } from '../components/orbit/RouteMap'
 import { StudySession } from '../components/orbit/StudySession'
+import { HitAlert } from '../components/orbit/HitAlert'
 import { Spaceship } from '../components/orbit/Spaceship'
 import { WeaponIcon } from '../components/orbit/WeaponIcon'
 import { MAX_ENERGY, MAX_SHIELDS, SHIELD_PRICE, speedOf } from '../lib/orbitRules'
@@ -1664,6 +1665,8 @@ export default function Orbit() {
   const dim = transit !== null
   return (
     <>
+      {/* 맞으면 화면 한가운데 알림창 — 본인이 확인을 눌러야 사라진다. */}
+      <HitAlert />
       <AnimatePresence>
         {transit?.phase === 'move' && <WarpTrails dir={transit.dir} />}
       </AnimatePresence>
