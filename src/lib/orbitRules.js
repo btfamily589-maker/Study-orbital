@@ -9,7 +9,7 @@
 /** 에너지 상한 */
 export const MAX_ENERGY = 60
 /** 이 잔고 이상이면 최고속. 아래로는 비례해서 느려지고 0이면 멈춘다. */
-export const FULL_SPEED_ENERGY = 50
+export const FULL_SPEED_ENERGY = 30
 /** 에너지 1당 항로 거리(최고속 기준). 6E × (1/6) = 1광년/시간 */
 export const DIST_PER_ENERGY = 1 / 6
 /* 방어막 세 종류(서버 engine.js와 같은 값).
