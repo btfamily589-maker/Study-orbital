@@ -18,7 +18,7 @@ import {
 } from './route.js'
 import { createCombatRoutes } from './combat.js'
 import { createAdminRoutes } from './admin.js'
-import { isNoFlyZone } from './engine.js'
+import { isNoAttackZone, isNoFlyZone } from './engine.js'
 import { resolveDueAttacks } from './combat.js'
 import { COL } from './store.js'
 import { makeNotifier } from './notify.js'
@@ -67,6 +67,7 @@ export function createOrbitRouter({ adminAuth, adminDb, adminMessaging, classId 
       nickname: req.orbit.nickname,
       isAdmin: req.orbit.isAdmin,
       noFlyZone: isNoFlyZone(settings),
+      noAttackZone: isNoAttackZone(settings),
     })
   })
 
@@ -108,6 +109,7 @@ export function createOrbitRouter({ adminAuth, adminDb, adminMessaging, classId 
       nickname: req.orbit.nickname,
       isAdmin: req.orbit.isAdmin,
       noFlyZone: isNoFlyZone(settings),
+      noAttackZone: isNoAttackZone(settings),
     }
 
     // 아직 참가 안 했으면 나머지는 그릴 게 없다 — 참가 화면만 뜨면 된다.

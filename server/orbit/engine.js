@@ -150,6 +150,14 @@ function isKoreanHoliday(kst) {
   return KOREAN_HOLIDAYS.has(`${mm}-${dd}`) || KOREAN_HOLIDAYS.has(`${yyyy}-${mm}-${dd}`)
 }
 
+/** HH:MM 구간 판정. start > end면 자정을 걸치는 밤 구간(예: 22:00~07:00)이다. */
+function inTimeWindow(start, end, kst) {
+  const hh = String(kst.getUTCHours()).padStart(2, '0')
+  const mm = String(kst.getUTCMinutes()).padStart(2, '0')
+  const now = `${hh}:${mm}`
+  return start <= end ? now >= start && now < end : now >= start || now < end
+}
+
 /** 수업시간엔 항해 금지. settings는 orbitSettings/config 문서 내용. */
 export function isNoFlyZone(settings, date) {
   if (!settings?.nfzEnabled) return false
@@ -159,15 +167,25 @@ export function isNoFlyZone(settings, date) {
   if (day === 0 || day === 6) return false // 주말
   if (isKoreanHoliday(kst)) return false
 
-  const hh = String(kst.getUTCHours()).padStart(2, '0')
-  const mm = String(kst.getUTCMinutes()).padStart(2, '0')
-  const now = `${hh}:${mm}`
-  return now >= settings.nfzStart && now < settings.nfzEnd
+  return inTimeWindow(settings.nfzStart, settings.nfzEnd, kst)
 }
 
 /** 미사일이 도착할 시점이 노플라이존인지 */
 export function willLandInNoFlyZone(settings, etaMinutes) {
   return isNoFlyZone(settings, new Date(Date.now() + etaMinutes * 60 * 1000))
+}
+
+/** 공격 금지 시간대 — 항해 금지와 달리 요일·공휴일을 가리지 않고 매일
+ * 적용되고, 자정을 걸칠 수 있다. 잠자는 시간에 미사일 알림이 울리지 않게
+ * 만든 개념이라 밤 구간(예: 22:00~07:00)이 기본 꼴이다. */
+export function isNoAttackZone(settings, date) {
+  if (!settings?.nazEnabled) return false
+  return inTimeWindow(settings.nazStart, settings.nazEnd, toKst(date || new Date()))
+}
+
+/** 미사일이 도착할 시점이 공격 금지 시간대인지 */
+export function willLandInNoAttackZone(settings, etaMinutes) {
+  return isNoAttackZone(settings, new Date(Date.now() + etaMinutes * 60 * 1000))
 }
 
 /* 상태 이름. 에너지가 얼마나 남았느냐로만 정한다.

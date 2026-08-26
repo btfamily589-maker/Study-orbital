@@ -73,13 +73,16 @@ export function createAdminRoutes({ store, requireMember }) {
 
   /** 항해 금지 시간대 설정. */
   router.put('/settings', guard, async (req, res) => {
-    const { nfzEnabled, nfzStart, nfzEnd } = req.body || {}
+    const { nfzEnabled, nfzStart, nfzEnd, nazEnabled, nazStart, nazEnd } = req.body || {}
     const patch = {}
 
     if (nfzEnabled !== undefined) patch.nfzEnabled = !!nfzEnabled
+    if (nazEnabled !== undefined) patch.nazEnabled = !!nazEnabled
     for (const [key, val] of [
       ['nfzStart', nfzStart],
       ['nfzEnd', nfzEnd],
+      ['nazStart', nazStart],
+      ['nazEnd', nazEnd],
     ]) {
       if (val === undefined) continue
       // HH:MM만 받는다. 형식이 깨지면 문자열 비교로 하는 시간 판정이 조용히 틀어진다.
@@ -89,6 +92,9 @@ export function createAdminRoutes({ store, requireMember }) {
       patch[key] = String(val)
     }
 
+    /* 항해 금지는 수업시간 개념이라 하루 안에서 끝나야 한다. 공격 금지는
+     * 밤 구간(자정 걸침)이 기본 꼴이라 순서를 강제하지 않는다 — 시작이 더
+     * 늦으면 "그 시각부터 다음 날 그 시각까지"로 읽는다(engine.inTimeWindow). */
     if (patch.nfzStart && patch.nfzEnd && patch.nfzStart >= patch.nfzEnd) {
       return res.status(400).json({ error: '시작 시각이 종료 시각보다 빨라야 합니다.' })
     }

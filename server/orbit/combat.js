@@ -24,9 +24,11 @@ import {
   REFLECT_PRICE,
   applyDamage,
   clampEnergy,
+  isNoAttackZone,
   isNoFlyZone,
   shieldCostFrom,
   shieldTierPrice,
+  willLandInNoAttackZone,
   willLandInNoFlyZone,
 } from './engine.js'
 import { settleUpTo } from './progress.js'
@@ -301,6 +303,11 @@ export function createCombatRoutes({ store, requireMember, requireShip }) {
     if (isNoFlyZone(settings)) {
       return res.status(403).json({ error: '항해 금지 시간대입니다. 지금은 공격할 수 없습니다.' })
     }
+    /* 공격 금지 시간대 — 새 공격만 막는다. 요격(targetAttackId)은 방어라서
+     * 열어둔다: 금지 전에 발사돼 날아오는 미사일을 못 막게 할 이유가 없다. */
+    if (!targetAttackId && isNoAttackZone(settings)) {
+      return res.status(403).json({ error: '공격 금지 시간대입니다. 지금은 공격할 수 없습니다.' })
+    }
 
     /* 요격 — 미사일로 미사일을 맞힌다.
      *
@@ -393,6 +400,12 @@ export function createCombatRoutes({ store, requireMember, requireShip }) {
       return res
         .status(403)
         .json({ error: '미사일 도착 시각이 항해 금지 시간대입니다. 발사할 수 없습니다.' })
+    }
+    /* 도착 시각이 공격 금지 시간대여도 못 쏜다 — 자는 사람 폰이 울린다. */
+    if (config.etaMinutes && willLandInNoAttackZone(settings, config.etaMinutes)) {
+      return res
+        .status(403)
+        .json({ error: '미사일 도착 시각이 공격 금지 시간대입니다. 발사할 수 없습니다.' })
     }
 
     const now = new Date()

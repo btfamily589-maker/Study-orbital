@@ -85,6 +85,11 @@ export const DEFAULT_SETTINGS = {
   nfzEnabled: true,
   nfzStart: '09:00',
   nfzEnd: '17:00',
+  /* 공격 금지 시간대 — 꺼진 채 시작한다. 켜면 요일과 무관하게 매일 이 구간엔
+   * 발사가 막힌다(요격은 예외). 자정을 걸치는 밤 구간도 된다. */
+  nazEnabled: false,
+  nazStart: '22:00',
+  nazEnd: '07:00',
 }
 
 /**

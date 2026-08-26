@@ -70,7 +70,8 @@ export default function OrbitAdmin() {
           <div>
             <div className="text-[15px] font-bold">항해 금지 시간대</div>
             <div className="mt-0.5 text-[12px] leading-relaxed text-orbit-dim">
-              설정된 시간 동안에는 공부 세션과 공격이 제한됩니다. 주말과 공휴일에는 적용되지 않습니다.
+              설정된 시간 동안에는 공부 세션과 공격이 제한됩니다. 주말과 공휴일에는 적용되지
+              않습니다.
             </div>
           </div>
           <button
@@ -103,6 +104,62 @@ export default function OrbitAdmin() {
             value={nfz.nfzEnd}
             disabled={!nfz.nfzEnabled}
             onChange={(e) => setNfz({ ...nfz, nfzEnd: e.target.value })}
+          />
+        </div>
+
+        <OrbitButton
+          className="mt-3 w-full"
+          disabled={busy === 'settings'}
+          onClick={() => run('settings', () => saveOrbitSettings(nfz))}
+        >
+          {busy === 'settings' ? '저장하는 중…' : '시간대 저장'}
+        </OrbitButton>
+      </section>
+
+      {/* 공격 금지 시간대 — 항해 금지와 달리 매일 적용되고 자정을 걸칠 수 있다.
+          잠자는 시간에 미사일 알림이 울리지 않게 만든 개념이다. */}
+      <section className="rounded-xl border border-white/12 bg-white/5 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[15px] font-bold">공격 금지 시간대</div>
+            <div className="mt-0.5 text-[12px] leading-relaxed text-orbit-dim">
+              설정된 시간 동안에는 미사일을 발사할 수 없습니다(요격은 가능). 매일 적용되고, 시작이
+              더 늦으면 다음 날 그 시각까지로 봅니다.
+            </div>
+          </div>
+          <button
+            onClick={() => setNfz({ ...nfz, nazEnabled: !nfz.nazEnabled })}
+            className={`h-7 w-12 shrink-0 rounded-full transition ${
+              nfz.nazEnabled ? 'bg-orbit-cyan' : 'bg-white/15'
+            }`}
+            aria-pressed={nfz.nazEnabled}
+            aria-label="공격 금지 시간대 켜기"
+          >
+            <span
+              className={`block h-6 w-6 rounded-full bg-white transition ${
+                nfz.nazEnabled ? 'translate-x-[22px]' : 'translate-x-[2px]'
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="time"
+            className={timeInput}
+            aria-label="공격 금지 시작"
+            value={nfz.nazStart ?? '22:00'}
+            disabled={!nfz.nazEnabled}
+            onChange={(e) => setNfz({ ...nfz, nazStart: e.target.value })}
+          />
+          <span className="shrink-0 text-[13px] text-orbit-dim">부터</span>
+          <input
+            type="time"
+            className={timeInput}
+            aria-label="공격 금지 끝"
+            value={nfz.nazEnd ?? '07:00'}
+            disabled={!nfz.nazEnabled}
+            onChange={(e) => setNfz({ ...nfz, nazEnd: e.target.value })}
           />
         </div>
 

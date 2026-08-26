@@ -533,7 +533,7 @@ function AttackLog() {
 }
 
 /* OPER 겉껍데기. 공격·방어막·기록을 하위 갈래로 나눈다. */
-function Combat({ ship, fleet, missiles, onChanged }) {
+function Combat({ ship, fleet, missiles, noAttackZone, onChanged }) {
   const [tab, setTab] = useState('attack')
 
   return (
@@ -553,7 +553,13 @@ function Combat({ ship, fleet, missiles, onChanged }) {
       </div>
 
       {tab === 'attack' && (
-        <AttackPanel ship={ship} fleet={fleet} missiles={missiles} onChanged={onChanged} />
+        <AttackPanel
+          ship={ship}
+          fleet={fleet}
+          missiles={missiles}
+          noAttackZone={noAttackZone}
+          onChanged={onChanged}
+        />
       )}
       {tab === 'shield' && <ShieldPanel ship={ship} onChanged={onChanged} />}
       {tab === 'log' && <AttackLog />}
@@ -617,7 +623,7 @@ const WEAPON_COLOR = {
  * 미사일은 쏘는 즉시 안 맞는다 — 도달 시간이 지나야 터진다. 그래서 "쐈는데 왜
  * 아무 일도 안 일어나지?"가 되지 않게 발사 결과에 도착 예정을 같이 띄운다.
  * EMP만 즉발이다. */
-function AttackPanel({ ship, fleet, missiles = [], onChanged }) {
+function AttackPanel({ ship, fleet, missiles = [], noAttackZone = false, onChanged }) {
   const [weapons, setWeapons] = useState([])
   const [pick, setPick] = useState(null) // 고른 무기 type
   const [target, setTarget] = useState(null) // 고른 대상 uid
@@ -929,7 +935,18 @@ function AttackPanel({ ship, fleet, missiles = [], onChanged }) {
         </p>
       )}
 
-      <OrbitButton variant="danger" className="w-full" disabled={!canFire || busy} onClick={fire}>
+      {noAttackZone && !chosenMissile && (
+        <p className="text-[13px] leading-snug text-orbit-amber">
+          공격 금지 시간대입니다 — 지금은 발사할 수 없습니다. 요격은 됩니다.
+        </p>
+      )}
+
+      <OrbitButton
+        variant="danger"
+        className="w-full"
+        disabled={!canFire || busy || (noAttackZone && !chosenMissile)}
+        onClick={fire}
+      >
         {busy
           ? '공격 중…'
           : weapon && chosenMissile
@@ -1732,6 +1749,14 @@ export default function Orbit() {
             ))}
           </Fading>
 
+          {state.status.noAttackZone && (
+            <Fading dim={dim}>
+              <p className="rounded-control border border-orbit-amber/30 bg-orbit-amber/10 px-3.5 py-2.5 text-[13px] leading-relaxed text-orbit-amber">
+                공격 금지 시간대 — 지금은 미사일을 발사할 수 없습니다(요격은 가능).
+              </p>
+            </Fading>
+          )}
+
           {view === 'hud' && (
             <div className="space-y-4">
               {/* 함선은 연출 내내 보인다 — 숫자만 빠진다. */}
@@ -1771,6 +1796,7 @@ export default function Orbit() {
               ship={state.ship}
               fleet={state.fleet}
               missiles={state.missiles}
+              noAttackZone={state.status.noAttackZone}
               onChanged={load}
             />
           )}
