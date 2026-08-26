@@ -936,8 +936,8 @@ function AttackPanel({ ship, fleet, missiles = [], noAttackZone = false, onChang
       )}
 
       {noAttackZone && !chosenMissile && (
-        <p className="text-[13px] leading-snug text-orbit-amber">
-          공격 금지 시간대입니다 — 지금은 발사할 수 없습니다. 요격은 됩니다.
+        <p className="rounded-control border border-orbit-amber/30 bg-orbit-amber/10 px-3.5 py-2.5 text-[13px] leading-relaxed text-orbit-amber">
+          공격 금지 시간대 — 지금은 미사일을 발사할 수 없습니다(요격은 가능).
         </p>
       )}
 
@@ -1748,14 +1748,6 @@ export default function Orbit() {
               </button>
             ))}
           </Fading>
-
-          {state.status.noAttackZone && (
-            <Fading dim={dim}>
-              <p className="rounded-control border border-orbit-amber/30 bg-orbit-amber/10 px-3.5 py-2.5 text-[13px] leading-relaxed text-orbit-amber">
-                공격 금지 시간대 — 지금은 미사일을 발사할 수 없습니다(요격은 가능).
-              </p>
-            </Fading>
-          )}
 
           {view === 'hud' && (
             <div className="space-y-4">
